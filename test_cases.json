@@ -1,0 +1,32 @@
+{
+  "010.png": {
+    "ally": [
+      "yamato", "graves", "dynamo",
+      "victor", "grey_talon", "holliday"
+    ],
+    "enemy": [
+      "nurse_harrow", "deadman_danny", "venator",
+      "abrams", "rat_king", "paradox"
+    ]
+  },
+  "012.png": {
+    "ally": [
+      "yamato", "graves", "dynamo",
+      "victor", "grey_talon", "holliday"
+    ],
+    "enemy": [
+      "nurse_harrow", "deadman_danny", "venator",
+      "abrams", "rat_king", "paradox"
+    ]
+  },
+  "001.png": {
+    "ally": [
+      "UNKNOWN", "UNKNOWN", "UNKNOWN",
+      "UNKNOWN", "UNKNOWN", "yamato"
+    ],
+    "enemy": [
+      "UNKNOWN", "UNKNOWN", "UNKNOWN",
+      "UNKNOWN", "UNKNOWN", "UNKNOWN"
+    ]
+  }
+}

@@ -1,73 +1,60 @@
+import json
 from pathlib import Path
 
 import cv2
-import numpy as np
+
+from recognition import HeroRecognizer
 
 ROOT = Path(__file__).parent
 
-# Starting values only; we will tune these using more screenshots.
-MIN_SCORE = 0.75
-MIN_MARGIN = 0.08
+with (ROOT / "screen_config.json").open() as file:
+    config = json.load(file)
 
+with (ROOT / "test_cases.json").open() as file:
+    cases = json.load(file)
 
-def prepare(path, search=False):
-    image = cv2.imread(str(path))
-    if image is None:
-        raise RuntimeError(f"Cannot read: {path}")
+if not cases:
+    raise RuntimeError("No test cases configured.")
 
-    image = cv2.resize(image, (74, 88))
+layout = config["layouts"][config["active_layout"]]
+recognizer = HeroRecognizer(ROOT / "portraits")
 
-    if search:
-        # Search within three pixels of the expected position.
-        image = image[5:73, 9:65]
-    else:
-        # Reference portrait stays the original size.
-        image = image[8:70, 12:62]
+passed = 0
+failed = 0
 
-    return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+for filename, expected_teams in cases.items():
+    screenshot = cv2.imread(str(ROOT / "samples" / filename))
+    if screenshot is None:
+        raise RuntimeError(f"Cannot read sample: {filename}")
 
-
-references = {
-    path.stem: prepare(path)
-    for path in sorted((ROOT / "portraits").glob("*.png"))
-}
-
-if len(references) < 2:
-    raise RuntimeError("Add labelled hero PNGs to the portraits folder.")
-
-# Test different screenshots from the one used for references.
-for screenshot in ["009", "010", "012", "001"]:
-    print(f"\n--- Screenshot {screenshot} ---")
+    results = recognizer.recognize_teams(screenshot, layout)
+    print(f"\n--- {filename} ---")
 
     for team in ["ally", "enemy"]:
-        for slot in range(1, 7):
-            path = ROOT / "debug_crops" / screenshot / f"{team}_{slot}.png"
-            portrait = prepare(path, search=True)
+        expected = expected_teams[team]
+        detected = results[team]
 
-            matches = []
-            for hero, reference in references.items():
-                score = float(cv2.matchTemplate(
-                    portrait, reference, cv2.TM_CCOEFF_NORMED
-                ).max())
+        if len(expected) != len(detected):
+            raise ValueError(f"{filename}: wrong number of {team} labels")
 
-                if not np.isfinite(score):
-                    score = -1.0
+        for slot, (wanted, result) in enumerate(
+            zip(expected, detected), start=1
+        ):
+            actual = result["hero"]
+            correct = actual == wanted
 
-                matches.append((score, hero))
+            if correct:
+                passed += 1
+            else:
+                failed += 1
 
-            matches.sort(reverse=True)
-            best_score, best_hero = matches[0]
-            second_score, second_hero = matches[1]
-            margin = best_score - second_score
-
-            confident = (
-                best_score >= MIN_SCORE
-                and margin >= MIN_MARGIN
-            )
-            result = best_hero if confident else "UNKNOWN"
-
+            status = "PASS" if correct else "FAIL"
             print(
-                f"{team} {slot}: {result} | "
-                f"best={best_hero} ({best_score:.3f}), "
-                f"next={second_hero} ({second_score:.3f})"
+                f"{status} {team} {slot}: "
+                f"expected={wanted}, got={actual} "
+                f"(best={result['best_match']}, "
+                f"score={result['score']:.3f})"
             )
+
+print(f"\nResults: {passed} passed, {failed} failed")
+raise SystemExit(1 if failed else 0)
