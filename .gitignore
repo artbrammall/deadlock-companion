@@ -4,3 +4,4 @@ build/
 dist/
 captures/
 debug_crops/
+debug_live/
