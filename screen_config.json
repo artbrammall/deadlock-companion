@@ -1,0 +1,29 @@
+{
+  "active_layout": "ranked",
+  "scan_interval_seconds": 0.5,
+  "confirmation_scans": 2,
+  "layouts": {
+    "ranked": {
+      "resolution": [1760, 990],
+      "ally_portraits": [
+        [305, 0, 379, 88],
+        [386, 0, 460, 88],
+        [467, 0, 541, 88],
+        [548, 0, 622, 88],
+        [629, 0, 703, 88],
+        [710, 0, 784, 88]
+      ],
+      "enemy_portraits": [
+        [977, 0, 1051, 88],
+        [1058, 0, 1132, 88],
+        [1139, 0, 1213, 88],
+        [1220, 0, 1294, 88],
+        [1301, 0, 1375, 88],
+        [1382, 0, 1456, 88]
+      ],
+      "pregame_text": [750, 550, 1015, 580],
+      "scoreboard_panel": [305, 112, 784, 315],
+      "self_detection": "portrait_highlight_when_tab_closed"
+    }
+  }
+}
