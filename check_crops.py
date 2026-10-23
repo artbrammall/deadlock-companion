@@ -11,8 +11,8 @@ with (ROOT / "screen_config.json").open() as file:
 layout = config["layouts"][config["active_layout"]]
 expected_width, expected_height = layout["resolution"]
 
-for filename in ["009.png", "010.png", "012.png"]:
-    source = ROOT / "samples" / filename
+for source in sorted((ROOT / "samples").glob("*.png")):
+    filename = source.name
     screenshot = cv2.imread(str(source))
 
     if screenshot is None:

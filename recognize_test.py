@@ -10,16 +10,20 @@ MIN_SCORE = 0.75
 MIN_MARGIN = 0.08
 
 
-def prepare(path):
+def prepare(path, search=False):
     image = cv2.imread(str(path))
     if image is None:
         raise RuntimeError(f"Cannot read: {path}")
 
-    # Standardise size, then remove edges and bottom lane markers.
     image = cv2.resize(image, (74, 88))
-    image = image[8:70, 12:62]
 
-    # Reduce the influence of blue/orange background colours.
+    if search:
+        # Search within three pixels of the expected position.
+        image = image[5:73, 9:65]
+    else:
+        # Reference portrait stays the original size.
+        image = image[8:70, 12:62]
+
     return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
 
@@ -32,19 +36,19 @@ if len(references) < 2:
     raise RuntimeError("Add labelled hero PNGs to the portraits folder.")
 
 # Test different screenshots from the one used for references.
-for screenshot in ["010", "012"]:
+for screenshot in ["009", "010", "012", "001"]:
     print(f"\n--- Screenshot {screenshot} ---")
 
     for team in ["ally", "enemy"]:
         for slot in range(1, 7):
             path = ROOT / "debug_crops" / screenshot / f"{team}_{slot}.png"
-            portrait = prepare(path)
+            portrait = prepare(path, search=True)
 
             matches = []
             for hero, reference in references.items():
                 score = float(cv2.matchTemplate(
                     portrait, reference, cv2.TM_CCOEFF_NORMED
-                )[0, 0])
+                ).max())
 
                 if not np.isfinite(score):
                     score = -1.0
