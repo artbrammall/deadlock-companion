@@ -7,6 +7,7 @@ import cv2
 
 from recognition import HeroRecognizer
 from screen_state import ScreenStateDetector
+from self_detection import detect_self
 
 ROOT = Path(__file__).resolve().parent
 DEBUG = ROOT / "debug_live"
@@ -127,20 +128,31 @@ try:
                 reset("WAITING: no complete, unique 6v6 lineup detected.")
                 continue
 
-            if snapshot == candidate:
+            self_slot = detect_self(frame, layout)
+            observation = (snapshot, self_slot)
+
+            if observation == candidate:
                 matching_scans += 1
             else:
-                candidate = snapshot
+                candidate = observation
                 matching_scans = 1
                 confirmed = None
                 report("CHECKING: lineup changed; awaiting confirmation.")
 
-            if matching_scans >= required_scans and snapshot != confirmed:
-                confirmed = snapshot
+            if matching_scans >= required_scans and observation != confirmed:
+                confirmed = observation
 
                 allies, enemies = snapshot
+
+                you = (
+                    "UNKNOWN"
+                    if self_slot is None
+                    else f"{allies[self_slot]} (ally slot {self_slot + 1})"
+                )
+
                 report(
                     f"\nCONFIRMED\n"
+                    f"You:     {you}\n"
                     f"Allies:  {', '.join(allies)}\n"
                     f"Enemies: {', '.join(enemies)}"
                 )
