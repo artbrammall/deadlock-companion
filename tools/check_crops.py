@@ -3,7 +3,7 @@ from pathlib import Path
 
 import cv2
 
-ROOT = Path(__file__).parent
+ROOT = Path(__file__).resolve().parent.parent
 
 with (ROOT / "screen_config.json").open() as file:
     config = json.load(file)
@@ -11,7 +11,7 @@ with (ROOT / "screen_config.json").open() as file:
 layout = config["layouts"][config["active_layout"]]
 expected_width, expected_height = layout["resolution"]
 
-for source in sorted((ROOT / "samples").glob("*.png")):
+for source in sorted((ROOT / "tests" / "samples").glob("*.png")):
     filename = source.name
     screenshot = cv2.imread(str(source))
 

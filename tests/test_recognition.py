@@ -5,12 +5,13 @@ import cv2
 
 from recognition import HeroRecognizer
 
-ROOT = Path(__file__).parent
+TESTS = Path(__file__).resolve().parent
+ROOT = TESTS.parent
 
 with (ROOT / "screen_config.json").open() as file:
     config = json.load(file)
 
-with (ROOT / "test_cases.json").open() as file:
+with (TESTS / "test_cases.json").open() as file:
     cases = json.load(file)
 
 if not cases:
@@ -23,7 +24,7 @@ passed = 0
 failed = 0
 
 for filename, expected_teams in cases.items():
-    screenshot = cv2.imread(str(ROOT / "samples" / filename))
+    screenshot = cv2.imread(str(TESTS / "samples" / filename))
     if screenshot is None:
         raise RuntimeError(f"Cannot read sample: {filename}")
 

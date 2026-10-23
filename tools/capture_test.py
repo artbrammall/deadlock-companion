@@ -11,7 +11,7 @@ MONITOR = 0
 print("Available monitors:")
 print(dxcam.output_info())
 
-folder = Path(__file__).parent / "captures"
+folder = Path(__file__).resolve().parent.parent / "captures"
 
 if folder.exists():
     shutil.rmtree(folder)
