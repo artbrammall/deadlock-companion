@@ -59,6 +59,26 @@ def reset(message):
     report(message)
 
 
+last_debug_save = {}
+
+
+def save_failure(reason, frame, details):
+    now = time.monotonic()
+
+    if now - last_debug_save.get(reason, -float("inf")) < 3:
+        return
+
+    last_debug_save[reason] = now
+    base = DEBUG / f"{reason}_{time.time_ns()}"
+
+    if cv2.imwrite(str(base.with_suffix(".png")), frame):
+        base.with_suffix(".json").write_text(
+            json.dumps(details, indent=2),
+            encoding="utf-8",
+        )
+        print(f"DEBUG: saved {base.name}", flush=True)
+
+
 print("Live detection starting. Switch to Deadlock.")
 print("Stop with Ctrl+C in this terminal.")
 
@@ -142,6 +162,11 @@ try:
                 or "UNKNOWN" in heroes
                 or len(set(heroes)) != 12
             ):
+                save_failure(
+                    "incomplete_lineup",
+                    frame,
+                    results,
+                )
                 reset("WAITING: no complete, unique 6v6 lineup detected.")
                 continue
 
