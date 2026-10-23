@@ -6,6 +6,7 @@ import dxcam
 import cv2
 
 from recognition import HeroRecognizer
+from screen_state import ScreenStateDetector
 
 ROOT = Path(__file__).resolve().parent
 DEBUG = ROOT / "debug_live"
@@ -25,6 +26,11 @@ if interval <= 0 or required_scans < 2:
     raise ValueError("Use a positive interval and at least two scans.")
 
 recognizer = HeroRecognizer(ROOT / "portraits")
+
+state_detector = ScreenStateDetector(
+    ROOT / "screen_templates",
+    resolution=layout["resolution"],
+)
 
 candidate = None
 matching_scans = 0
@@ -70,6 +76,12 @@ try:
             height, width = frame.shape[:2]
             if [width, height] != layout["resolution"]:
                 reset("PAUSED: waiting for a fresh frame at game resolution.")
+                continue
+
+            state, _ = state_detector.detect(frame)
+
+            if state != "PREGAME":
+                reset(f"WAITING: {state}; current lineup cleared.")
                 continue
 
             results = recognizer.recognize_teams(frame, layout)
