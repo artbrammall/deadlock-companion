@@ -8,6 +8,8 @@ import cv2
 from recognition import HeroRecognizer
 from screen_state import ScreenStateDetector
 from self_detection import detect_self
+from roster import get_roster
+from recommendations import eligible_heroes
 
 ROOT = Path(__file__).resolve().parent
 DEBUG = ROOT / "debug_live"
@@ -37,6 +39,9 @@ candidate = None
 matching_scans = 0
 confirmed = None
 last_message = None
+
+STALE_AFTER_SECONDS = 1.5
+last_frame_at = None
 
 
 def report(message):
@@ -71,8 +76,20 @@ try:
             frame = camera.grab()
 
             if frame is None:
-                reset("PAUSED: waiting for a fresh frame at game resolution.")
+                # Missing frames break consecutive-scan agreement.
+                candidate = None
+                matching_scans = 0
+
+                if (
+                    last_frame_at is None
+                    or time.monotonic() - last_frame_at
+                    >= STALE_AFTER_SECONDS
+                ):
+                    reset("PAUSED: capture stale; current lineup cleared.")
+
                 continue
+
+            last_frame_at = time.monotonic()
 
             height, width = frame.shape[:2]
             if [width, height] != layout["resolution"]:
@@ -136,25 +153,45 @@ try:
             else:
                 candidate = observation
                 matching_scans = 1
-                confirmed = None
-                report("CHECKING: lineup changed; awaiting confirmation.")
+                if observation != confirmed:
+                    confirmed = None
+                report("CHECKING: awaiting consecutive matching scans.")
 
             if matching_scans >= required_scans and observation != confirmed:
                 confirmed = observation
 
                 allies, enemies = snapshot
 
+                current_hero = (
+                    None if self_slot is None else allies[self_slot]
+                )
+
                 you = (
                     "UNKNOWN"
-                    if self_slot is None
-                    else f"{allies[self_slot]} (ally slot {self_slot + 1})"
+                    if current_hero is None
+                    else f"{current_hero} (ally slot {self_slot + 1})"
+                )
+
+                choices = eligible_heroes(
+                    get_roster(), allies, enemies, current_hero
+                )
+
+                choice_text = (
+                    ", ".join(
+                        f"{hero} (stay)" if hero == current_hero else hero
+                        for hero in choices
+                    )
+                    if choices
+                    else "Unavailable: identity or lineup uncertain"
                 )
 
                 report(
                     f"\nCONFIRMED\n"
                     f"You:     {you}\n"
                     f"Allies:  {', '.join(allies)}\n"
-                    f"Enemies: {', '.join(enemies)}"
+                    f"Enemies: {', '.join(enemies)}\n"
+                    f"Candidates from visible lineup: {choice_text}\n"
+                    "Enemy picks may have changed. Confirm availability in-game."
                 )
 
         finally:
