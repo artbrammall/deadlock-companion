@@ -8,9 +8,11 @@ def prepare(image, search=False):
     image = cv2.resize(image, (74, 88))
 
     if search:
-        image = image[5:73, 9:65]
+        # Central portrait area, with three pixels of search padding.
+        image = image[17:63, 17:57]
     else:
-        image = image[8:70, 12:62]
+        # Focus on the centre, avoiding peripheral UI/background.
+        image = image[20:60, 20:54]
 
     return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 

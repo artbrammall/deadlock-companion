@@ -28,5 +28,25 @@
       "UNKNOWN", "UNKNOWN", "UNKNOWN",
       "UNKNOWN", "UNKNOWN", "UNKNOWN"
     ]
+  },
+  "match2_normal.png": {
+    "ally": [
+      "warden", "lash", "pocket",
+      "graves", "viscous", "victor"
+    ],
+    "enemy": [
+      "nurse_harrow", "haze", "kelvin",
+      "mo_and_krill", "rat_king", "seven"
+    ]
+  },
+    "match2_tab.png": {
+    "ally": [
+      "pocket", "lash", "warden",
+      "graves", "viscous", "victor"
+    ],
+    "enemy": [
+      "nurse_harrow", "haze", "kelvin",
+      "mo_and_krill", "rat_king", "seven"
+    ]
   }
 }
