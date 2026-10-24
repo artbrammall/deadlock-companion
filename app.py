@@ -246,17 +246,51 @@ class CompanionWindow(QWidget):
             "",
         ]
 
-        for position, hero in enumerate(self.selected_heroes, start=1):
+        # Competitive always displays the current top three scores.
+        # This includes staying if the current hero ranks in the top three.
+        selected = self.selected_heroes or []
+        if mode == "Competitive":
+            selected = [
+                row["hero"]
+                for row in sorted(
+                    rows,
+                    key=lambda row: (-row["score"], row["hero"]),
+                )[:3]
+            ]
+
+        for position, hero in enumerate(selected, start=1):
             result = by_hero[hero]
-            label = display_name(hero)
+            is_current = hero == data["current_hero"]
+            label = (
+                f"Stay on {display_name(hero)}"
+                if is_current
+                else display_name(hero)
+            )
 
-            if hero == data["current_hero"]:
-                label += " (stay)"
+            difference = result["score"] - current["score"]
+            # Avoid displaying "-0.00".
+            if abs(difference) < 0.005:
+                difference = 0.0
 
-            headings.append(f"{position}. {label}")
+            heading = f"{position}. {label}"
+            if mode == "Competitive" and not is_current:
+                heading += f" ({difference:+.2f} points vs staying)"
+
+            headings.append(heading)
             details.extend([
                 f"{position}. {label}",
                 f"   Total score: {result['score']:.2f} points",
+            ])
+
+            if mode == "Competitive":
+                details.append(
+                    "   Current hero: comparison baseline"
+                    if is_current
+                    else f"   Score difference vs staying: "
+                         f"{difference:+.2f} points"
+                )
+
+            details.extend([
                 f"   Overall baseline: {result['baseline_pct']:.2f}",
                 f"   Enemy adjustment: {result['matchup_points']:+.2f}",
                 f"   Ally adjustment: {result['synergy_points']:+.2f}",
@@ -295,7 +329,14 @@ class CompanionWindow(QWidget):
 
             details.append("")
 
-        if mode == "Random":
+        if mode == "Competitive":
+            details.extend([
+                "Ranked by total score.",
+                "Differences compare model scores, not win probabilities.",
+                "A higher score does not guarantee a better pick.",
+            ])
+
+        elif mode == "Random":
             details.append("Three random options, not ranked by score.")
 
         elif mode == "Best Opportunity":
