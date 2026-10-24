@@ -10,6 +10,7 @@ from screen_state import ScreenStateDetector
 from self_detection import detect_self
 from roster import get_roster
 from recommendations import eligible_heroes
+from scoring import PickScorer
 
 ROOT = Path(__file__).resolve().parent
 DEBUG = ROOT / "debug_live"
@@ -29,6 +30,9 @@ if interval <= 0 or required_scans < 2:
     raise ValueError("Use a positive interval and at least two scans.")
 
 recognizer = HeroRecognizer(ROOT / "portraits")
+
+scorer = PickScorer()
+print(f"Statistics downloaded: {scorer.downloaded_at}")
 
 state_detector = ScreenStateDetector(
     ROOT / "screen_templates",
@@ -201,21 +205,67 @@ try:
                     get_roster(), allies, enemies, current_hero
                 )
 
-                choice_text = (
-                    ", ".join(
-                        f"{hero} (stay)" if hero == current_hero else hero
-                        for hero in choices
+                ranking_lines = []
+
+                if choices:
+                    # Remove your current hero before evaluating replacements.
+                    teammates = [
+                        hero for hero in allies
+                        if hero != current_hero
+                    ]
+
+                    try:
+                        ranked = [
+                            scorer.score(hero, teammates, enemies)
+                            for hero in choices
+                        ]
+                        ranked.sort(
+                            key=lambda result: (
+                                -result["score"], result["hero"]
+                            )
+                        )
+
+                        for position, result in enumerate(ranked, start=1):
+                            hero = result["hero"]
+                            label = (
+                                f"{hero} (stay)"
+                                if hero == current_hero
+                                else hero
+                            )
+
+                            ranking_lines.append(
+                                f"{position}. {label}: "
+                                f"{result['score']:.2f} points "
+                                f"[base {result['baseline_pct']:.2f}, "
+                                f"enemies {result['matchup_points']:+.2f}, "
+                                f"allies {result['synergy_points']:+.2f}]"
+                            )
+
+                            if result["missing"]:
+                                ranking_lines.append(
+                                    "   Missing pair data: "
+                                    + ", ".join(result["missing"])
+                                )
+
+                    except ValueError as error:
+                        ranking_lines = [
+                            f"Recommendations unavailable: {error}"
+                        ]
+                else:
+                    ranking_lines.append(
+                        "Unavailable: identity or lineup uncertain"
                     )
-                    if choices
-                    else "Unavailable: identity or lineup uncertain"
-                )
+
+                ranking_text = "\n".join(ranking_lines)
 
                 report(
                     f"\nCONFIRMED\n"
                     f"You:     {you}\n"
                     f"Allies:  {', '.join(allies)}\n"
                     f"Enemies: {', '.join(enemies)}\n"
-                    f"Candidates from visible lineup: {choice_text}\n"
+                    f"Suggested picks from visible lineup:\n"
+                    f"{ranking_text}\n"
+                    "Scores are ranking points, not win probabilities.\n"
                     "Enemy picks may have changed. Confirm availability in-game."
                 )
 
