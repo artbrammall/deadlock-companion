@@ -20,6 +20,7 @@ from real_opportunity import RealOpportunityScorer
 
 GUI_MODE = "--gui" in sys.argv
 stop_requested = threading.Event()
+roster_reload_requested = threading.Event()
 
 
 def emit_event(event):
@@ -29,8 +30,12 @@ def emit_event(event):
 
 def listen_for_stop():
     for line in sys.stdin:
-        if line.strip() == "stop":
+        command = line.strip()
+        if command == "stop":
             break
+        if command == "reload_roster":
+            roster_reload_requested.set()
+
     stop_requested.set()
 
 
@@ -133,6 +138,11 @@ try:
         started = time.monotonic()
 
         try:
+            if roster_reload_requested.is_set():
+                roster_reload_requested.clear()
+                reset("CHECKING: roster changed; confirming lineup.")
+                emit_event({"type": "roster_reloaded"})
+
             frame = camera.grab()
 
             if frame is None:

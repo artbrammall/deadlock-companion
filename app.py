@@ -1,9 +1,11 @@
 import json
 import sys
 import time
+import sqlite3
+
+from roster_dialog import RosterDialog
 from datetime import datetime, timezone
 from pathlib import Path
-
 from PySide6.QtCore import QProcess, QTimer, Qt
 from PySide6.QtWidgets import (
     QApplication,
@@ -13,6 +15,8 @@ from PySide6.QtWidgets import (
     QPushButton,
     QVBoxLayout,
     QWidget,
+    QDialog,
+    QMessageBox,
 )
 
 from pick_modes import MODES, choose_heroes
@@ -35,6 +39,7 @@ class CompanionWindow(QWidget):
         self.selection_key = None
         self.selected_heroes = None
         self.closing = False
+        self.roster_update_pending = False
         self.last_heartbeat = time.monotonic()
 
         self.status = QLabel("Starting detection and loading statistics…")
@@ -66,10 +71,14 @@ class CompanionWindow(QWidget):
         self.log.setMaximumBlockCount(150)
         self.log.setMaximumHeight(140)
 
+        self.edit_roster_button = QPushButton("Edit roster")
+        self.edit_roster_button.clicked.connect(self.edit_roster)
+
         layout = QVBoxLayout(self)
         for widget in (
             self.status,
             self.mode,
+            self.edit_roster_button,
             self.suggestion,
             self.details,
             self.reroll,
@@ -164,7 +173,15 @@ class CompanionWindow(QWidget):
                 self.selected_heroes = None
             return
 
+        if event["type"] == "roster_reloaded":
+            self.roster_update_pending = False
+            return
+
         if event["type"] != "lineup":
+            return
+
+        # Ignore queued results from before the roster was saved.
+        if self.roster_update_pending:
             return
 
         if not event["ranked"]:
@@ -193,6 +210,40 @@ class CompanionWindow(QWidget):
             )
 
         self.render_pick()
+
+    def edit_roster(self):
+        try:
+            dialog = RosterDialog(self)
+        except (sqlite3.Error, OSError, ValueError) as error:
+            QMessageBox.warning(
+                self, "Could not load roster", str(error)
+            )
+            return
+
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+
+        self.selection_key = None
+        self.selected_heroes = None
+        self.using_previous = False
+
+        if self.process.state() != QProcess.ProcessState.Running:
+            self.roster_update_pending = False
+            self.hide_recommendation(
+                "Roster saved. Restart the app to resume detection."
+            )
+            return
+
+        self.roster_update_pending = True
+        self.hide_recommendation(
+            "Roster saved. Waiting for a fresh confirmed lineup."
+        )
+
+        if self.process.write(b"reload_roster\n") < 0:
+            self.roster_update_pending = False
+            self.hide_recommendation(
+                "Roster saved, but detector update failed. Restart the app."
+            )
 
     def mode_changed(self, _):
         self.selection_key = None
@@ -388,6 +439,7 @@ class CompanionWindow(QWidget):
         self.closing = True
         self.hide_recommendation("Stopping detection…")
         self.mode.setEnabled(False)
+        self.edit_roster_button.setEnabled(False)
         self.process.write(b"stop\n")
 
         # A network request may still be running during startup.

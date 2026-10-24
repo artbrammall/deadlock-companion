@@ -58,6 +58,24 @@ def change_roster(action, heroes):
         connection.close()
 
 
+def set_roster(heroes):
+    heroes = sorted(set(heroes))
+    invalid = sorted(set(heroes) - available_heroes())
+    if invalid:
+        raise ValueError(f"Unknown hero names: {', '.join(invalid)}")
+
+    connection = connect()
+    try:
+        with connection:
+            connection.execute("DELETE FROM roster")
+            connection.executemany(
+                "INSERT INTO roster (hero) VALUES (?)",
+                [(hero,) for hero in heroes],
+            )
+    finally:
+        connection.close()
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("action", choices=["list", "add", "remove"])
