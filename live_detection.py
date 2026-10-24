@@ -5,12 +5,36 @@ from pathlib import Path
 import dxcam
 import cv2
 
+import sys
+import threading
+
 from recognition import HeroRecognizer
 from screen_state import ScreenStateDetector
 from self_detection import detect_self
 from roster import get_roster
 from recommendations import eligible_heroes
 from stats_cache import load_scorer
+
+
+GUI_MODE = "--gui" in sys.argv
+stop_requested = threading.Event()
+
+
+def emit_event(event):
+    if GUI_MODE:
+        print("@@EVENT " + json.dumps(event), flush=True)
+
+
+def listen_for_stop():
+    for line in sys.stdin:
+        if line.strip() == "stop":
+            break
+    stop_requested.set()
+
+
+if GUI_MODE:
+    threading.Thread(target=listen_for_stop, daemon=True).start()
+
 
 ROOT = Path(__file__).resolve().parent
 DEBUG = ROOT / "debug_live"
@@ -54,6 +78,7 @@ def report(message):
     if message != last_message:
         print(message, flush=True)
         last_message = message
+        emit_event({"type": "status", "message": message})
 
 
 def reset(message):
@@ -94,7 +119,7 @@ camera = dxcam.create(
 )
 
 try:
-    while True:
+    while not stop_requested.is_set():
         started = time.monotonic()
 
         try:
@@ -207,6 +232,7 @@ try:
                 )
 
                 ranking_lines = []
+                ranked = []
 
                 if scorer is None:
                     ranking_lines.append(
@@ -253,6 +279,7 @@ try:
                                 )
 
                     except ValueError as error:
+                        ranked = []
                         ranking_lines = [
                             f"Recommendations unavailable: {error}"
                         ]
@@ -274,9 +301,25 @@ try:
                     "Enemy picks may have changed. Confirm availability in-game."
                 )
 
+                emit_event({
+                    "type": "lineup",
+                    "current_hero": current_hero,
+                    "self_slot": self_slot,
+                    "allies": list(allies),
+                    "enemies": list(enemies),
+                    "ranked": ranked,
+                    "downloaded_at": (
+                        scorer.downloaded_at if scorer is not None else None
+                    ),
+                    "unavailable": (
+                        None if ranked else "\n".join(ranking_lines)
+                    ),
+                })
+
         finally:
+            emit_event({"type": "heartbeat"})
             elapsed = time.monotonic() - started
-            time.sleep(max(0, interval - elapsed))
+            stop_requested.wait(max(0, interval - elapsed))
 
 except KeyboardInterrupt:
     print("\nStopped.")
