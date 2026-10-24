@@ -14,6 +14,7 @@ from self_detection import detect_self
 from roster import get_roster
 from recommendations import eligible_heroes
 from stats_cache import load_scorer
+from opportunity import OpportunityScorer
 
 
 GUI_MODE = "--gui" in sys.argv
@@ -58,6 +59,14 @@ recognizer = HeroRecognizer(ROOT / "portraits")
 scorer = load_scorer()
 if scorer is not None:
     print(f"Statistics downloaded: {scorer.downloaded_at}")
+
+opportunity_scorer = None
+
+if scorer is not None:
+    try:
+        opportunity_scorer = OpportunityScorer(scorer)
+    except (ValueError, KeyError) as error:
+        print(f"Best Opportunity unavailable: {error}", flush=True)
 
 state_detector = ScreenStateDetector(
     ROOT / "screen_templates",
@@ -250,6 +259,11 @@ try:
                             scorer.score(hero, teammates, enemies)
                             for hero in choices
                         ]
+                        if opportunity_scorer is not None:
+                            for result in ranked:
+                                result.update(
+                                    opportunity_scorer.describe(result)
+                                )
                         ranked.sort(
                             key=lambda result: (
                                 -result["score"], result["hero"]

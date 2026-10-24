@@ -43,7 +43,7 @@ class CompanionWindow(QWidget):
 
         self.mode = QComboBox()
         self.mode.addItems(MODES)
-        self.mode.setCurrentText("Matchup variety")
+        self.mode.setCurrentText("Best Opportunity")
 
         self.suggestion = QLabel("Waiting for a confirmed pregame lineup")
         self.suggestion.setWordWrap(True)
@@ -205,11 +205,11 @@ class CompanionWindow(QWidget):
             self.render_pick()
 
     def reroll_pick(self):
-        if self.payload is None or self.mode.currentText() == "Competitive":
+        if self.payload is None or self.mode.currentText() != "Random":
             return
 
         self.selected_heroes = choose_heroes(
-            self.payload["ranked"], self.mode.currentText()
+            self.payload["ranked"], "Random"
         )
         self.render_pick()
 
@@ -262,6 +262,14 @@ class CompanionWindow(QWidget):
                 f"   Ally adjustment: {result['synergy_points']:+.2f}",
             ])
 
+            if "opportunity_percentile" in result:
+                details.extend([
+                    "   Opportunity percentile: "
+                    f"{result['opportunity_percentile']:.1f}",
+                    "   Adjustment above this hero's typical situation: "
+                    f"{result['above_typical_points']:+.3f} points",
+                ])
+
             if result["missing"]:
                 details.append(
                     "   Missing pair data: " + ", ".join(result["missing"])
@@ -269,14 +277,25 @@ class CompanionWindow(QWidget):
 
             details.append("")
 
-        if mode != "Competitive":
-            details.append(
-                "Options are drawn in this order, not ranked by total score."
-            )
+        if mode == "Random":
+            details.append("Three random options, not ranked by score.")
 
-        self.suggestion.setText("\n".join(headings))
+        elif mode == "Best Opportunity":
+            details.extend([
+                "Ranked by opportunity relative to each hero's own",
+                "uniformly simulated comparison lineups.",
+                "Percentiles are not win probabilities.",
+                "The best available opportunities may still be ordinary",
+                "or unfavourable; inspect the percentile and adjustment.",
+            ])
+
+        self.suggestion.setText(
+            "\n".join(headings)
+            if headings
+            else "Best Opportunity unavailable: reference data incomplete"
+        )
         self.details.setPlainText("\n".join(details))
-        self.reroll.setEnabled(mode != "Competitive")
+        self.reroll.setEnabled(mode == "Random")
 
     def check_worker(self):
         # Hide stale recommendations if the capture process hangs.
