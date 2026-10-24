@@ -10,7 +10,7 @@ from screen_state import ScreenStateDetector
 from self_detection import detect_self
 from roster import get_roster
 from recommendations import eligible_heroes
-from scoring import PickScorer
+from stats_cache import load_scorer
 
 ROOT = Path(__file__).resolve().parent
 DEBUG = ROOT / "debug_live"
@@ -31,8 +31,9 @@ if interval <= 0 or required_scans < 2:
 
 recognizer = HeroRecognizer(ROOT / "portraits")
 
-scorer = PickScorer()
-print(f"Statistics downloaded: {scorer.downloaded_at}")
+scorer = load_scorer()
+if scorer is not None:
+    print(f"Statistics downloaded: {scorer.downloaded_at}")
 
 state_detector = ScreenStateDetector(
     ROOT / "screen_templates",
@@ -207,7 +208,11 @@ try:
 
                 ranking_lines = []
 
-                if choices:
+                if scorer is None:
+                    ranking_lines.append(
+                        "Recommendations unavailable: no usable statistics."
+                    )
+                elif choices:
                     # Remove your current hero before evaluating replacements.
                     teammates = [
                         hero for hero in allies
