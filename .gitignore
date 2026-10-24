@@ -6,3 +6,5 @@ captures/
 debug_crops/
 debug_live/
 data/
+.pytest_cache/
+*.py[cod]

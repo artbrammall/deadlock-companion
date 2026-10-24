@@ -1,4 +1,5 @@
 import json
+import unittest
 from pathlib import Path
 
 import cv2
@@ -8,54 +9,56 @@ from recognition import HeroRecognizer
 TESTS = Path(__file__).resolve().parent
 ROOT = TESTS.parent
 
-with (ROOT / "screen_config.json").open() as file:
-    config = json.load(file)
 
-with (TESTS / "test_cases.json").open() as file:
-    cases = json.load(file)
+class RecognitionTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        config = json.loads(
+            (ROOT / "screen_config.json").read_text(encoding="utf-8")
+        )
+        cls.cases = json.loads(
+            (TESTS / "test_cases.json").read_text(encoding="utf-8")
+        )
+        if not cls.cases:
+            raise ValueError("No test cases configured.")
 
-if not cases:
-    raise RuntimeError("No test cases configured.")
+        cls.layout = config["layouts"][config["active_layout"]]
+        cls.recognizer = HeroRecognizer(ROOT / "portraits")
 
-layout = config["layouts"][config["active_layout"]]
-recognizer = HeroRecognizer(ROOT / "portraits")
+    def test_portraits(self):
+        for filename, expected_teams in self.cases.items():
+            with self.subTest(filename=filename):
+                screenshot = cv2.imread(
+                    str(TESTS / "samples" / filename)
+                )
+                self.assertIsNotNone(
+                    screenshot, f"Cannot read sample: {filename}"
+                )
+                results = self.recognizer.recognize_teams(
+                    screenshot, self.layout
+                )
 
-passed = 0
-failed = 0
+                for team in ("ally", "enemy"):
+                    with self.subTest(team=team):
+                        expected = expected_teams[team]
+                        detected = results[team]
+                        self.assertEqual(
+                            len(expected),
+                            len(detected),
+                            f"{filename}: wrong number of {team} labels",
+                        )
 
-for filename, expected_teams in cases.items():
-    screenshot = cv2.imread(str(TESTS / "samples" / filename))
-    if screenshot is None:
-        raise RuntimeError(f"Cannot read sample: {filename}")
+                        for slot, (wanted, result) in enumerate(
+                            zip(expected, detected), start=1
+                        ):
+                            with self.subTest(slot=slot):
+                                self.assertEqual(
+                                    result["hero"],
+                                    wanted,
+                                    f"best={result['best_match']}, "
+                                    f"score={result['score']:.3f}",
+                                )
 
-    results = recognizer.recognize_teams(screenshot, layout)
-    print(f"\n--- {filename} ---")
 
-    for team in ["ally", "enemy"]:
-        expected = expected_teams[team]
-        detected = results[team]
-
-        if len(expected) != len(detected):
-            raise ValueError(f"{filename}: wrong number of {team} labels")
-
-        for slot, (wanted, result) in enumerate(
-            zip(expected, detected), start=1
-        ):
-            actual = result["hero"]
-            correct = actual == wanted
-
-            if correct:
-                passed += 1
-            else:
-                failed += 1
-
-            status = "PASS" if correct else "FAIL"
-            print(
-                f"{status} {team} {slot}: "
-                f"expected={wanted}, got={actual} "
-                f"(best={result['best_match']}, "
-                f"score={result['score']:.3f})"
-            )
-
-print(f"\nResults: {passed} passed, {failed} failed")
-raise SystemExit(1 if failed else 0)
+if __name__ == "__main__":
+    unittest.main()

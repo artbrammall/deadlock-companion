@@ -1,3 +1,4 @@
+import unittest
 from pathlib import Path
 
 import cv2
@@ -8,9 +9,7 @@ from screen_state import ScreenStateDetector
 ROOT = Path(__file__).resolve().parent.parent
 SAMPLES = ROOT / "tests" / "samples"
 
-detector = ScreenStateDetector(ROOT / "screen_templates")
-
-cases = {
+CASES = {
     "010.png": "PREGAME",
     "012.png": "PREGAME",
     "match2_normal.png": "PREGAME",
@@ -25,49 +24,37 @@ cases = {
     "pregame_character.png": "LOADING",
 }
 
-passed = 0
-failed = 0
+
+class ScreenStateTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.detector = ScreenStateDetector(ROOT / "screen_templates")
+
+    def check_state(self, frame, expected):
+        actual, scores = self.detector.detect(frame)
+        self.assertEqual(actual, expected, f"Scores: {scores}")
+
+    def test_saved_screenshots(self):
+        for filename, expected in CASES.items():
+            with self.subTest(filename=filename):
+                image = cv2.imread(str(SAMPLES / filename))
+                self.assertIsNotNone(
+                    image, f"Cannot read sample: {filename}"
+                )
+                self.check_state(image, expected)
+
+    def test_black_frame(self):
+        self.check_state(
+            np.zeros((990, 1760, 3), dtype=np.uint8),
+            "NOT_PREGAME",
+        )
+
+    def test_wrong_resolution(self):
+        self.check_state(
+            np.zeros((1080, 1920, 3), dtype=np.uint8),
+            "WRONG_RESOLUTION",
+        )
 
 
-def check(label, frame, expected):
-    global passed, failed
-
-    actual, scores = detector.detect(frame)
-    correct = actual == expected
-
-    if correct:
-        passed += 1
-    else:
-        failed += 1
-
-    print(
-        f"{'PASS' if correct else 'FAIL'} {label}: "
-        f"expected={expected}, got={actual}"
-    )
-
-    if not correct:
-        print("Scores:", scores)
-
-
-for filename, expected in cases.items():
-    image = cv2.imread(str(SAMPLES / filename))
-
-    if image is None:
-        raise RuntimeError(f"Cannot read sample: {filename}")
-
-    check(filename, image, expected)
-
-check(
-    "black frame",
-    np.zeros((990, 1760, 3), dtype=np.uint8),
-    "NOT_PREGAME",
-)
-
-check(
-    "1080p frame",
-    np.zeros((1080, 1920, 3), dtype=np.uint8),
-    "WRONG_RESOLUTION",
-)
-
-print(f"\nResults: {passed} passed, {failed} failed")
-raise SystemExit(1 if failed else 0)
+if __name__ == "__main__":
+    unittest.main()

@@ -1,4 +1,5 @@
 import json
+import unittest
 from pathlib import Path
 
 import cv2
@@ -8,13 +9,8 @@ from self_detection import detect_self
 
 ROOT = Path(__file__).resolve().parent.parent
 
-with (ROOT / "screen_config.json").open() as file:
-    config = json.load(file)
-
-layout = config["layouts"][config["active_layout"]]
-
-# Expected slot numbers here are human-readable: 1–6.
-cases = {
+# Expected slots use human-readable numbering: 1 to 6.
+CASES = {
     "009.png": 5,
     "010.png": 1,
     "012.png": 1,
@@ -23,32 +19,33 @@ cases = {
     "match2_tab.png": 3,
 }
 
-passed = 0
-failed = 0
 
-for filename, expected in cases.items():
-    image = cv2.imread(str(ROOT / "tests" / "samples" / filename))
+class SelfDetectionTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        config = json.loads(
+            (ROOT / "screen_config.json").read_text(encoding="utf-8")
+        )
+        cls.layout = config["layouts"][config["active_layout"]]
 
-    if image is None:
-        raise RuntimeError(f"Cannot read: {filename}")
+    def test_saved_screenshots(self):
+        for filename, expected in CASES.items():
+            with self.subTest(filename=filename):
+                image = cv2.imread(
+                    str(ROOT / "tests" / "samples" / filename)
+                )
+                self.assertIsNotNone(
+                    image, f"Cannot read sample: {filename}"
+                )
 
-    slot = detect_self(image, layout)
-    actual = None if slot is None else slot + 1
+                slot = detect_self(image, self.layout)
+                actual = None if slot is None else slot + 1
+                self.assertEqual(actual, expected)
 
-    correct = actual == expected
-    passed += int(correct)
-    failed += int(not correct)
+    def test_blank_screen(self):
+        blank = np.zeros((990, 1760, 3), dtype=np.uint8)
+        self.assertIsNone(detect_self(blank, self.layout))
 
-    print(
-        f"{'PASS' if correct else 'FAIL'} {filename}: "
-        f"expected slot {expected}, got {actual}"
-    )
 
-blank = np.zeros((990, 1760, 3), dtype=np.uint8)
-correct = detect_self(blank, layout) is None
-passed += int(correct)
-failed += int(not correct)
-print(f"{'PASS' if correct else 'FAIL'} blank screen")
-
-print(f"\nResults: {passed} passed, {failed} failed")
-raise SystemExit(1 if failed else 0)
+if __name__ == "__main__":
+    unittest.main()
