@@ -145,6 +145,9 @@ def main():
                         # claiming that no heroes were banned.
                         "banned_hero_ids": match.get("banned_hero_ids"),
                         "average_badge": match.get("average_badge"),
+                        "winning_team": match.get("winning_team"),
+                        "match_outcome": match.get("match_outcome"),
+                        "not_scored": match.get("not_scored"),
                     }
 
                 if len(matches) < PAGE_SIZE:
