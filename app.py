@@ -263,12 +263,30 @@ class CompanionWindow(QWidget):
             ])
 
             if "opportunity_percentile" in result:
+                reference_count = result["opportunity_reference_count"]
+                downloaded_at = datetime.fromisoformat(
+                    result["opportunity_reference_downloaded_at"]
+                )
+                reference_age = max(
+                    0,
+                    (
+                        datetime.now(timezone.utc) - downloaded_at
+                    ).total_seconds() / 3600,
+                )
+
                 details.extend([
                     "   Opportunity percentile: "
                     f"{result['opportunity_percentile']:.1f}",
-                    "   Adjustment above this hero's typical situation: "
+                    "   Above this hero's typical situation: "
                     f"{result['above_typical_points']:+.3f} points",
+                    f"   Reference: {reference_count:,} actual matches",
+                    f"   Lineups downloaded {reference_age:.1f} hours ago",
                 ])
+
+                if reference_count < 500:
+                    details.append(
+                        "   Limited reference sample; percentile is less stable."
+                    )
 
             if result["missing"]:
                 details.append(
@@ -282,11 +300,10 @@ class CompanionWindow(QWidget):
 
         elif mode == "Best Opportunity":
             details.extend([
-                "Ranked by opportunity relative to each hero's own",
-                "uniformly simulated comparison lineups.",
+                "Ranked against situations where each hero actually played.",
                 "Percentiles are not win probabilities.",
-                "The best available opportunities may still be ordinary",
-                "or unfavourable; inspect the percentile and adjustment.",
+                "A favourable opportunity can still be a weaker",
+                "competitive pick than another hero.",
             ])
 
         self.suggestion.setText(

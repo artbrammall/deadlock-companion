@@ -14,7 +14,8 @@ from self_detection import detect_self
 from roster import get_roster
 from recommendations import eligible_heroes
 from stats_cache import load_scorer
-from opportunity import OpportunityScorer
+import httpx
+from real_opportunity import RealOpportunityScorer
 
 
 GUI_MODE = "--gui" in sys.argv
@@ -64,8 +65,8 @@ opportunity_scorer = None
 
 if scorer is not None:
     try:
-        opportunity_scorer = OpportunityScorer(scorer)
-    except (ValueError, KeyError) as error:
+        opportunity_scorer = RealOpportunityScorer(scorer)
+    except (httpx.HTTPError, OSError, ValueError, KeyError, TypeError) as error:
         print(f"Best Opportunity unavailable: {error}", flush=True)
 
 state_detector = ScreenStateDetector(
