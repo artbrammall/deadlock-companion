@@ -89,16 +89,33 @@ class RankedGateTests(unittest.TestCase):
 
     def test_old_samples_cannot_unlock_gate(self):
         for file in SAMPLES.glob("*.png"):
-            if file.name == "competitive_pregame.png":
+            if file.name == "competitive_pregame.png" or file.name.startswith("ranked_dropout_"):
                 continue
             with self.subTest(name=file.name):
                 self.assertLess(self.gate.marker_score(self.frame(file.name)), 0.85)
 
-    def test_gameplay_and_loading_clear_evidence(self):
-        for state in ("NOT_PREGAME", "LOADING"):
-            self.gate.update(self.frame("competitive_pregame.png"), "PREGAME", 0)
-            self.assertFalse(self.gate.update(self.frame("competitive_teams.png"), state, 1))
-            self.assertFalse(self.gate.update(self.frame("competitive_pregame_tab.png"), "PREGAME", 2))
+    def test_loading_clears_evidence_immediately(self):
+        self.gate.update(self.frame("competitive_pregame.png"), "PREGAME", 0)
+        self.assertFalse(self.gate.update(self.frame("competitive_teams.png"), "LOADING", 1))
+        self.assertFalse(self.gate.update(self.frame("competitive_pregame_tab.png"), "PREGAME", 2))
+
+    def test_brief_unknown_transition_preserves_only_mode_evidence(self):
+        self.gate.update(self.frame("competitive_pregame.png"), "PREGAME", 0)
+        self.assertFalse(self.gate.update(self.frame("hero_selection.png"), "HERO_SELECTION", 1))
+        self.assertFalse(self.gate.update(self.frame("not_pregame.png"), "NOT_PREGAME", 2))
+        self.assertTrue(self.gate.update(self.frame("competitive_pregame_tab.png"), "PREGAME", 3))
+
+    def test_sustained_non_pregame_clears_evidence(self):
+        self.gate.update(self.frame("competitive_pregame.png"), "PREGAME", 0)
+        self.assertFalse(self.gate.update(self.frame("not_pregame.png"), "NOT_PREGAME", 1))
+        self.assertFalse(self.gate.update(self.frame("not_pregame.png"), "NOT_PREGAME", 6))
+        self.assertFalse(self.gate.update(self.frame("competitive_pregame_tab.png"), "PREGAME", 7))
+
+    def test_return_after_long_transition_cannot_revive_evidence(self):
+        self.gate.update(self.frame("competitive_pregame.png"), "PREGAME", 0)
+        self.gate.update(self.frame("not_pregame.png"), "NOT_PREGAME", 1)
+        self.assertFalse(self.gate.update(self.frame("competitive_pregame_tab.png"), "PREGAME", 6))
+        self.assertTrue(self.gate.update(self.frame("competitive_pregame.png"), "PREGAME", 7))
 
     def test_pause_preserves_evidence_but_never_allows_recommendations(self):
         self.gate.update(self.frame("competitive_pregame.png"), "PREGAME", 0)

@@ -30,6 +30,7 @@ class HeroRecognizer:
         self.min_margin = min_margin
         self.references = {}
         self.detail_references = {}
+        self.full_detail_references = {}
 
         for path in sorted(Path(portraits_folder).glob("*.png")):
             image = cv2.imread(str(path))
@@ -37,7 +38,8 @@ class HeroRecognizer:
                 raise RuntimeError(f"Cannot read reference: {path}")
 
             self.references[path.stem] = prepare(image)
-            self.detail_references[path.stem] = detail_features(image)[20:60, 20:54]
+            self.full_detail_references[path.stem] = detail_features(image)
+            self.detail_references[path.stem] = self.full_detail_references[path.stem][20:60, 20:54]
 
         if len(self.references) < 2:
             raise RuntimeError("At least two reference portraits are required.")
@@ -102,6 +104,52 @@ class HeroRecognizer:
             "method": "background_suppressed_masked" if first_enemy else "background_suppressed",
         }
 
+    def recognize_regions(self, image, first_enemy=False):
+        """Require two disjoint detailed regions to agree at the same offset.
+
+        A background edge may spoil one part of a translucent portrait while
+        leaving other parts readable. Scores are not probabilities.
+        """
+        features = detail_features(image)
+        regions = [
+            (14, 10, 38, 34), (38, 10, 62, 34),
+            (14, 34, 38, 58), (38, 34, 62, 58),
+            (14, 58, 38, 82), (38, 58, 62, 82),
+        ]
+        if first_enemy:
+            # Avoid the team banner, including search/filter padding.
+            regions = [
+                (14, 10, 38, 34), (38, 10, 62, 34),
+                (45, 38, 69, 62), (45, 62, 69, 86),
+            ]
+        matches = []
+        for hero, reference in self.full_detail_references.items():
+            maps = []
+            for x, y, right, bottom in regions:
+                scores = cv2.matchTemplate(
+                    features[y - 2:bottom + 2, x - 2:right + 2],
+                    reference[y:bottom, x:right], cv2.TM_CCOEFF_NORMED,
+                )
+                scores = np.where(np.isfinite(scores), scores, -1.0)
+                maps.append(scores)
+            ordered = np.sort(np.stack(maps), axis=0)
+            # Both regions must contribute strong evidence; one good fragment
+            # cannot compensate for an unrelated second fragment.
+            supported = ordered[-2] >= 0.75
+            combined = (ordered[-1] + ordered[-2]) / 2
+            best = np.unravel_index(combined.argmax(), combined.shape)
+            score = float(combined[best])
+            matches.append((score, hero, bool(supported[best])))
+        matches.sort(reverse=True)
+        score, hero, supported = matches[0]
+        margin = score - matches[1][0]
+        accepted = supported and score >= max(self.min_score, 0.85) and margin >= max(self.min_margin, 0.20)
+        return {
+            "hero": hero if accepted else "UNKNOWN",
+            "best_match": hero, "score": score, "margin": margin,
+            "method": "two_region_agreement",
+        }
+
     def recognize_teams(self, screenshot, layout):
         height, width = screenshot.shape[:2]
 
@@ -126,6 +174,10 @@ class HeroRecognizer:
                 result = self.recognize(crop)
                 if team == "enemy" and result["hero"] == "UNKNOWN":
                     result = self.recognize_faded(crop, first_enemy=(slot == 0))
+                    if result["hero"] == "UNKNOWN":
+                        regional = self.recognize_regions(crop, first_enemy=(slot == 0))
+                        if regional["hero"] != "UNKNOWN":
+                            result = regional
                 teams[team].append(result)
 
         return teams
