@@ -10,6 +10,7 @@ import threading
 
 from recognition import HeroRecognizer
 from screen_state import ScreenStateDetector
+from ranked_gate import RankedPregameGate
 from self_detection import detect_self
 from roster import get_roster
 from recommendations import eligible_heroes
@@ -78,6 +79,8 @@ state_detector = ScreenStateDetector(
     ROOT / "screen_templates",
     resolution=layout["resolution"],
 )
+
+ranked_gate = RankedPregameGate(ROOT / "screen_templates", layout["resolution"])
 
 candidate = None
 matching_scans = 0
@@ -167,9 +170,14 @@ try:
                 continue
 
             state, _ = state_detector.detect(frame)
+            ranked_ready = ranked_gate.update(frame, state)
 
             if state != "PREGAME":
                 reset(f"WAITING: {state}; current lineup cleared.")
+                continue
+
+            if not ranked_ready:
+                reset("WAITING: competitive pregame not confirmed; show BANNED HEROES panel.")
                 continue
 
             results = recognizer.recognize_teams(frame, layout)
@@ -217,7 +225,7 @@ try:
                     frame,
                     results,
                 )
-                reset("WAITING: no complete, unique 6v6 lineup detected.")
+                reset("WAITING: no complete, unique 6v6 lineup detected. Hold Tab for a clearer view.")
                 continue
 
             self_slot = detect_self(frame, layout)

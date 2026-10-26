@@ -10,6 +10,7 @@ from PySide6.QtCore import QProcess, QTimer, Qt
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
+    QCheckBox,
     QLabel,
     QPlainTextEdit,
     QPushButton,
@@ -19,7 +20,8 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 
-from pick_modes import MODES, choose_heroes
+from pick_modes import MODES, choose_heroes, choose_balanced, balance_adjustments
+from balance_history import BalanceHistory
 
 ROOT = Path(__file__).resolve().parent
 
@@ -35,6 +37,10 @@ class CompanionWindow(QWidget):
         self.resize(600, 680)
 
         self.payload = None
+        self.history = BalanceHistory()
+        self.balance_session = None
+        self.prior_counts = {}
+        self.last_history_touch = 0.0
         self.using_previous = False
         self.selection_key = None
         self.selected_heroes = None
@@ -42,7 +48,7 @@ class CompanionWindow(QWidget):
         self.roster_update_pending = False
         self.last_heartbeat = time.monotonic()
 
-        self.status = QLabel("Starting detection and loading statistics…")
+        self.status = QLabel("Starting detection and loading statistics...")
         self.status.setWordWrap(True)
         self.status.setTextFormat(Qt.TextFormat.PlainText)
 
@@ -74,11 +80,26 @@ class CompanionWindow(QWidget):
         self.edit_roster_button = QPushButton("Edit roster")
         self.edit_roster_button.clicked.connect(self.edit_roster)
 
+        self.balance = QCheckBox("Balance roster")
+        self.balance.setChecked(self.history.enabled())
+        self.balance.setToolTip(
+            "Favour heroes with fewer previous #1 recommendations. "
+            "Counts are recorded with the toggle on or off."
+        )
+        self.balance.toggled.connect(self.balance_changed)
+        self.reset_counts_button = QPushButton("Reset counts")
+        self.reset_counts_button.clicked.connect(self.reset_balance_counts)
+        self.history_label = QLabel("#1 counts start with this update.")
+        self.history_label.setWordWrap(True)
+
         layout = QVBoxLayout(self)
         for widget in (
             self.status,
             self.mode,
             self.edit_roster_button,
+            self.balance,
+            self.reset_counts_button,
+            self.history_label,
             self.suggestion,
             self.details,
             self.reroll,
@@ -138,6 +159,14 @@ class CompanionWindow(QWidget):
 
         if event["type"] == "heartbeat":
             self.last_heartbeat = time.monotonic()
+            if (self.payload is not None and not self.using_previous
+                    and self.balance_session is not None
+                    and time.monotonic() - self.last_history_touch >= 10):
+                try:
+                    self.history.touch(self.balance_session)
+                    self.last_history_touch = time.monotonic()
+                except sqlite3.Error as error:
+                    self.log.appendPlainText(f"Count history update failed: {error}")
             return
 
         if event["type"] == "status":
@@ -157,7 +186,7 @@ class CompanionWindow(QWidget):
 
             if keep_previous and self.payload is not None:
                 self.status.setText(
-                    "Using last confirmed lineup • awaiting live verification"
+                    "Using last confirmed lineup | awaiting live verification"
                 )
             else:
                 self.hide_recommendation(message)
@@ -194,6 +223,17 @@ class CompanionWindow(QWidget):
         self.payload = event
         self.using_previous = False
 
+        try:
+            session_id = self.history.session()
+            if session_id != self.balance_session:
+                self.selection_key = None
+                self.selected_heroes = None
+            self.balance_session = session_id
+            self.prior_counts = self.history.counts(excluding=session_id)
+        except sqlite3.Error as error:
+            self.hide_recommendation(f"Could not load recommendation counts: {error}")
+            return
+
         # Sorting makes this independent of lane/portrait order.
         key = (
             event["current_hero"],
@@ -201,15 +241,49 @@ class CompanionWindow(QWidget):
             tuple(sorted(event["enemies"])),
             tuple(sorted(row["hero"] for row in event["ranked"])),
             self.mode.currentText(),
+            self.balance.isChecked(),
+            tuple((r["hero"], r["score"], r.get("opportunity_percentile"))
+                  for r in sorted(event["ranked"], key=lambda r: r["hero"])),
         )
 
         if key != self.selection_key or self.selected_heroes is None:
             self.selection_key = key
-            self.selected_heroes = choose_heroes(
-                event["ranked"], self.mode.currentText()
-            )
+            self.selected_heroes = self.select_picks(event["ranked"])
 
         self.render_pick()
+
+    def select_picks(self, rows):
+        if self.balance.isChecked():
+            return choose_balanced(rows, self.mode.currentText(), self.prior_counts)
+        return choose_heroes(rows, self.mode.currentText())
+
+    def balance_changed(self, enabled):
+        try:
+            self.history.set_enabled(enabled)
+        except sqlite3.Error as error:
+            self.balance.blockSignals(True)
+            self.balance.setChecked(not enabled)
+            self.balance.blockSignals(False)
+            QMessageBox.warning(self, "Could not save setting", str(error))
+            return
+        self.mode_changed(None)
+
+    def reset_balance_counts(self):
+        if QMessageBox.question(
+            self, "Reset counts", "Clear recommendation history? "
+            "The current visible #1 will count as the first new entry.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        ) != QMessageBox.StandardButton.Yes:
+            return
+        try:
+            self.history.reset()
+        except sqlite3.Error as error:
+            QMessageBox.warning(self, "Could not reset counts", str(error))
+            return
+        self.prior_counts = {}
+        self.history_label.setText("Recommendation counts reset.")
+        self.mode_changed(None)
 
     def edit_roster(self):
         try:
@@ -250,18 +324,14 @@ class CompanionWindow(QWidget):
         self.selected_heroes = None
 
         if self.payload is not None:
-            self.selected_heroes = choose_heroes(
-                self.payload["ranked"], self.mode.currentText()
-            )
+            self.selected_heroes = self.select_picks(self.payload["ranked"])
             self.render_pick()
 
     def reroll_pick(self):
         if self.payload is None or self.mode.currentText() != "Random":
             return
 
-        self.selected_heroes = choose_heroes(
-            self.payload["ranked"], "Random"
-        )
+        self.selected_heroes = self.select_picks(self.payload["ranked"])
         self.render_pick()
 
     def render_pick(self):
@@ -279,13 +349,13 @@ class CompanionWindow(QWidget):
         )
 
         state_label = (
-            "Using last confirmed lineup • awaiting live verification"
+            "Using last confirmed lineup | awaiting live verification"
             if self.using_previous
             else "Confirmed pregame"
         )
 
         self.status.setText(
-            f"{state_label} • {mode}\n"
+            f"{state_label} | {mode}\n"
             f"Statistics: {age_hours:.1f} hours old"
         )
 
@@ -297,17 +367,23 @@ class CompanionWindow(QWidget):
             "",
         ]
 
-        # Competitive always displays the current top three scores.
-        # This includes staying if the current hero ranks in the top three.
         selected = self.selected_heroes or []
-        if mode == "Competitive":
-            selected = [
-                row["hero"]
-                for row in sorted(
-                    rows,
-                    key=lambda row: (-row["score"], row["hero"]),
-                )[:3]
-            ]
+        bonuses = (
+            balance_adjustments(rows, mode, self.prior_counts)
+            if self.balance.isChecked() and mode != "Random" else {}
+        )
+        if self.balance_session is not None and not self.using_previous:
+            try:
+                self.history.record(
+                    self.balance_session, selected[0] if selected else None
+                )
+                total = sum(self.prior_counts.values()) + bool(selected)
+                self.history_label.setText(
+                    f"{total} counted pregame recommendations. "
+                    "Latest #1 replaces this pregame's entry; rescans add nothing."
+                )
+            except sqlite3.Error as error:
+                self.history_label.setText(f"Could not save #1 count: {error}")
 
         for position, hero in enumerate(selected, start=1):
             result = by_hero[hero]
@@ -347,6 +423,15 @@ class CompanionWindow(QWidget):
                 f"   Ally adjustment: {result['synergy_points']:+.2f}",
             ])
 
+            details.append(
+                f"   Previous #1 recommendations: {self.prior_counts.get(hero, 0)}"
+            )
+            if hero in bonuses:
+                unit = "score points" if mode == "Competitive" else "percentile points"
+                details.append(
+                    f"   Balance boost: +{bonuses[hero]:.2f} {unit} (preference only)"
+                )
+
             if "opportunity_percentile" in result:
                 reference_count = result["opportunity_reference_count"]
                 downloaded_at = datetime.fromisoformat(
@@ -382,17 +467,24 @@ class CompanionWindow(QWidget):
 
         if mode == "Competitive":
             details.extend([
-                "Ranked by total score.",
+                ("Ranked by score plus balance boost."
+                 if self.balance.isChecked() else "Ranked by total score."),
                 "Differences compare model scores, not win probabilities.",
                 "A higher score does not guarantee a better pick.",
             ])
 
         elif mode == "Random":
-            details.append("Three random options, not ranked by score.")
+            details.append(
+                "Random options weighted toward less-recommended heroes."
+                if self.balance.isChecked()
+                else "Random options, not ranked by score."
+            )
 
         elif mode == "Best Opportunity":
             details.extend([
-                "Ranked against situations where each hero actually played.",
+                ("Ranked by opportunity percentile plus balance boost."
+                 if self.balance.isChecked()
+                 else "Ranked against situations where each hero actually played."),
                 "Percentiles are not win probabilities.",
                 "A favourable opportunity can still be a weaker",
                 "competitive pick than another hero.",
@@ -437,9 +529,11 @@ class CompanionWindow(QWidget):
             return
 
         self.closing = True
-        self.hide_recommendation("Stopping detection…")
+        self.hide_recommendation("Stopping detection...")
         self.mode.setEnabled(False)
         self.edit_roster_button.setEnabled(False)
+        self.balance.setEnabled(False)
+        self.reset_counts_button.setEnabled(False)
         self.process.write(b"stop\n")
 
         # A network request may still be running during startup.

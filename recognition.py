@@ -17,11 +17,19 @@ def prepare(image, search=False):
     return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
 
+def detail_features(image):
+    """Suppress smooth background visible through translucent portraits."""
+    grey = cv2.cvtColor(cv2.resize(image, (74, 88)), cv2.COLOR_BGR2GRAY)
+    grey = grey.astype(np.float32)
+    return grey - cv2.GaussianBlur(grey, (0, 0), 1.5)
+
+
 class HeroRecognizer:
     def __init__(self, portraits_folder, min_score=0.75, min_margin=0.08):
         self.min_score = min_score
         self.min_margin = min_margin
         self.references = {}
+        self.detail_references = {}
 
         for path in sorted(Path(portraits_folder).glob("*.png")):
             image = cv2.imread(str(path))
@@ -29,6 +37,7 @@ class HeroRecognizer:
                 raise RuntimeError(f"Cannot read reference: {path}")
 
             self.references[path.stem] = prepare(image)
+            self.detail_references[path.stem] = detail_features(image)[20:60, 20:54]
 
         if len(self.references) < 2:
             raise RuntimeError("At least two reference portraits are required.")
@@ -63,6 +72,36 @@ class HeroRecognizer:
             "margin": margin,
         }
 
+    def recognize_faded(self, image, first_enemy=False):
+        """Conservative fallback, only used after normal recognition fails."""
+        features = detail_features(image)
+        search = features[17:63, 17:57]
+        mask = np.ones((40, 34), dtype=np.uint8)
+        if first_enemy:
+            # Fixed 1760x990 HUD banner overlaps the left/lower face.
+            # Include padding for search shifts and Gaussian filter support.
+            yy, xx = np.mgrid[20:60, 20:54]
+            mask[(xx < 49) & (yy >= 31)] = 0
+
+        matches = []
+        for hero, reference in self.detail_references.items():
+            scores = cv2.matchTemplate(
+                search, reference, cv2.TM_CCOEFF_NORMED, mask=mask
+            )
+            finite = scores[np.isfinite(scores)]
+            score = float(finite.max()) if finite.size else -1.0
+            matches.append((score, hero))
+
+        matches.sort(reverse=True)
+        score, hero = matches[0]
+        margin = score - matches[1][0]
+        accepted = score >= self.min_score and margin >= max(self.min_margin, 0.12)
+        return {
+            "hero": hero if accepted else "UNKNOWN",
+            "best_match": hero, "score": score, "margin": margin,
+            "method": "background_suppressed_masked" if first_enemy else "background_suppressed",
+        }
+
     def recognize_teams(self, screenshot, layout):
         height, width = screenshot.shape[:2]
 
@@ -76,7 +115,7 @@ class HeroRecognizer:
         for team in ["ally", "enemy"]:
             teams[team] = []
 
-            for left, top, right, bottom in layout[f"{team}_portraits"]:
+            for slot, (left, top, right, bottom) in enumerate(layout[f"{team}_portraits"]):
                 if not (
                     0 <= left < right <= width
                     and 0 <= top < bottom <= height
@@ -84,6 +123,9 @@ class HeroRecognizer:
                     raise ValueError(f"Invalid {team} portrait rectangle")
 
                 crop = screenshot[top:bottom, left:right]
-                teams[team].append(self.recognize(crop))
+                result = self.recognize(crop)
+                if team == "enemy" and result["hero"] == "UNKNOWN":
+                    result = self.recognize_faded(crop, first_enemy=(slot == 0))
+                teams[team].append(result)
 
         return teams
