@@ -1,0 +1,2 @@
+Deadlock hero artwork belongs to Valve Corporation. Provided via the independent community Deadlock API.
+Source: https://api.deadlock-api.com/v1/assets/heroes

@@ -1,0 +1,448 @@
+{
+  "source": "https://api.deadlock-api.com/v1/assets/heroes",
+  "retrieved_at": "2026-10-28T22:47:03.852864+00:00",
+  "artwork_credit": "Deadlock hero artwork belongs to Valve Corporation. Provided via the independent community Deadlock API.",
+  "heroes": {
+    "abrams": {
+      "hero_id": 6,
+      "display_name": "Abrams",
+      "file": "abrams.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/bull_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "c4a5f91dec1c3bcf8604b9c916ed1b4c882197ac7ddf4267ee4d6bd5c4623c3a"
+    },
+    "apollo": {
+      "hero_id": 77,
+      "display_name": "Apollo",
+      "file": "apollo.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/fencer_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "8e171074d63e37937010889a978492dd514f37183d4e4ee52a4666a030e43cf6"
+    },
+    "baba": {
+      "hero_id": 88,
+      "display_name": "Baba",
+      "file": "baba.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/baba_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "5390dcf9a65f75e087b0a83d533ed3f6186a045288fd3cabdb31201f31def734"
+    },
+    "bebop": {
+      "hero_id": 15,
+      "display_name": "Bebop",
+      "file": "bebop.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/bebop_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "7238b42e56c797455c24e9d8470ea87be6a795c2c3480881649f3a51ebe2fef8"
+    },
+    "billy": {
+      "hero_id": 72,
+      "display_name": "Billy",
+      "file": "billy.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/punkgoat_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "c01c3c02fbed5916c687dd67e78a1ed078827066d158a195385ad7e8ffc1da14"
+    },
+    "calico": {
+      "hero_id": 16,
+      "display_name": "Calico",
+      "file": "calico.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/nano_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "cacb1c8f564232f1660550d6936e158ff13cbf0cd6e620afbd72e59f15ad5745"
+    },
+    "celeste": {
+      "hero_id": 81,
+      "display_name": "Celeste",
+      "file": "celeste.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/unicorn_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "13b7e1da1034356379f8f39a00721649fbb974fbe2f204bb464475f61b03287b"
+    },
+    "deadman_danny": {
+      "hero_id": 78,
+      "display_name": "Deadman Danny",
+      "file": "deadman_danny.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/deadpack_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "88429425b3eaaf5f2cff1804d3570e190e00677d1518d4dace63de69746e10eb"
+    },
+    "drifter": {
+      "hero_id": 64,
+      "display_name": "Drifter",
+      "file": "drifter.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/drifter_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "212c708fbbdb9298e5f435fa4fc0965ae6cb4c530e5c06650a9534a72b371388"
+    },
+    "dynamo": {
+      "hero_id": 11,
+      "display_name": "Dynamo",
+      "file": "dynamo.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/sumo_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "5d19e5d0fbf333fec82279c32c464123b37eeb849973975ccdb47eef5f9e3517"
+    },
+    "graves": {
+      "hero_id": 76,
+      "display_name": "Graves",
+      "file": "graves.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/necro_card.png",
+      "width": 240,
+      "height": 320,
+      "sha256": "4634c0bd8043e6f0d7e3747f12d24a0ba4d25d949bddd5ec9a1ba6d16b413f18"
+    },
+    "grey_talon": {
+      "hero_id": 17,
+      "display_name": "Grey Talon",
+      "file": "grey_talon.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/archer_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "3c0f6e467b051d2fd95ca4aadef51d985f1f69a5cb608b657f3dbfd4d83b2d5d"
+    },
+    "haze": {
+      "hero_id": 13,
+      "display_name": "Haze",
+      "file": "haze.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/haze_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "b19033cb7ed735e1ef74b6ffb68aa3cbf59d1a263e7d661810ad1f9188974cee"
+    },
+    "holliday": {
+      "hero_id": 14,
+      "display_name": "Holliday",
+      "file": "holliday.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/astro_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "b8749d1da68ce1cc6584eff8e1d6eea623060f1aaf123de15df85054cfc10ed9"
+    },
+    "infernus": {
+      "hero_id": 1,
+      "display_name": "Infernus",
+      "file": "infernus.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/inferno_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "17179a28e7056c30a29f97df1dc1da9799a2274e320d7c57d51a053a3d3640a5"
+    },
+    "ivy": {
+      "hero_id": 20,
+      "display_name": "Ivy",
+      "file": "ivy.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/tengu_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "dc164cd305a0dc9c7a16e8346a23cd7a98091cf827e975b7aec03ee40ce47db8"
+    },
+    "kelvin": {
+      "hero_id": 12,
+      "display_name": "Kelvin",
+      "file": "kelvin.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/kelvin_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "6ed4cb3c1ae5d0b567d8b65e6a11f713016f3ef6c89761a55f0280c3a0ab8e02"
+    },
+    "lady_geist": {
+      "hero_id": 4,
+      "display_name": "Lady Geist",
+      "file": "lady_geist.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/spectre_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "565423162656a4e872e8ed8d8ec9ee16b313bb29a2920c148c3bf4864500bb43"
+    },
+    "lash": {
+      "hero_id": 31,
+      "display_name": "Lash",
+      "file": "lash.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/lash_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "279f00ca93a22acd20cd52f370eb2dc2af67f0d6c9faa0c94b0b9590fb51d85d"
+    },
+    "mcginnis": {
+      "hero_id": 8,
+      "display_name": "McGinnis",
+      "file": "mcginnis.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/engineer_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "bd5716b20777f4013789be6d8b5e79e44ba1c5429d2178b08d40b6ad1d3adfde"
+    },
+    "mina": {
+      "hero_id": 63,
+      "display_name": "Mina",
+      "file": "mina.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/vampirebat_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "c6ccd2a55f4aebe04144fa0df19f7b7f7c8d33694e1036abc3508ed73ef27a2f"
+    },
+    "mirage": {
+      "hero_id": 52,
+      "display_name": "Mirage",
+      "file": "mirage.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/mirage_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "a78ada1e68e273060e56157822980729be990100d897f80604714b9354b60786"
+    },
+    "mo_and_krill": {
+      "hero_id": 18,
+      "display_name": "Mo & Krill",
+      "file": "mo_and_krill.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/digger_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "fc826c61394e8c7ab3bf7e37bbbc7ee411e4fd2b49806470e10fb55b5ba726e8"
+    },
+    "nurse_harrow": {
+      "hero_id": 87,
+      "display_name": "Nurse Harrow",
+      "file": "nurse_harrow.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/nurse_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "dbb219221a16bfd6c4d09cbbb12928488c65b5026da92b2810ac44c4c55fc3e0"
+    },
+    "paige": {
+      "hero_id": 67,
+      "display_name": "Paige",
+      "file": "paige.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/bookworm_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "623c8f40ce62ec01cba13eed4cbc6f5532cf2b82afd8752136a9d9b1c7a0d694"
+    },
+    "paradox": {
+      "hero_id": 10,
+      "display_name": "Paradox",
+      "file": "paradox.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/chrono_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "271e57f01ea32a82de5121f8c786316f9cacf4a585f100bcee5c1fa005167628"
+    },
+    "pocket": {
+      "hero_id": 50,
+      "display_name": "Pocket",
+      "file": "pocket.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/synth_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "875d42c8196a0c9e958fe7ee21ca85ba114920b7573189c16d4dbf5ee203b521"
+    },
+    "rat_king": {
+      "hero_id": 84,
+      "display_name": "Rat King",
+      "file": "rat_king.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/ratking_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "7a28d9c097384c2e39fcba78a8de9ba1720bd395f10bd354032ec886a2dfa066"
+    },
+    "rem": {
+      "hero_id": 79,
+      "display_name": "Rem",
+      "file": "rem.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/familiar_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "86dd0e63e4977262e6b67c42fdfda88552cac54b3d915e30e196c1390b0c4c90"
+    },
+    "seven": {
+      "hero_id": 2,
+      "display_name": "Seven",
+      "file": "seven.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/gigawatt_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "73d7a0d03a7778af4e9bcda22d1b80cf46e73d120761521a6fd0d60890476813"
+    },
+    "shiv": {
+      "hero_id": 19,
+      "display_name": "Shiv",
+      "file": "shiv.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/shiv_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "603a0f88723398e9d531e969ac1671c7475af5c3ac46db57fee6e10398f7d610"
+    },
+    "silver": {
+      "hero_id": 80,
+      "display_name": "Silver",
+      "file": "silver.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/werewolf_card.png",
+      "width": 240,
+      "height": 320,
+      "sha256": "a76450060f1820e8a2c83ebadc9f8e7df4c41c12fa0efde88e3f6454f3653fd7"
+    },
+    "sinclair": {
+      "hero_id": 60,
+      "display_name": "Sinclair",
+      "file": "sinclair.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/magician_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "967b1290d11e65a8fa5bac05f50e354fa0e15cdf2b845285ef33bc052a2bf0af"
+    },
+    "solomon": {
+      "hero_id": 85,
+      "display_name": "Solomon",
+      "file": "solomon.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/chessmaster_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "54a2fcf4cec278660abe00ac895cc82d4d95ed3ed762ac3aa4451b2e357ee889"
+    },
+    "the_doorman": {
+      "hero_id": 69,
+      "display_name": "The Doorman",
+      "file": "the_doorman.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/doorman_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "feecfa6bc5d6d7d98d397d7f1177bbd424a913f705a23380a2de7d42dcaa4616"
+    },
+    "venator": {
+      "hero_id": 65,
+      "display_name": "Venator",
+      "file": "venator.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/priest_card.png",
+      "width": 240,
+      "height": 320,
+      "sha256": "1c0f92b4a80733249d28b6ee326837cfe91c5855aa6e8ae1344d0ff019cb2d29"
+    },
+    "victor": {
+      "hero_id": 66,
+      "display_name": "Victor",
+      "file": "victor.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/frank_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "2751ac512cb80ea8d921aac6ec9950531c951bd48bc1fbd630cbb675057cd7b4"
+    },
+    "vindicta": {
+      "hero_id": 3,
+      "display_name": "Vindicta",
+      "file": "vindicta.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/hornet_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "b1f32f8e90ce7d1b8974e3b52b15dc9be9fc56fe4d2a5cbc5f5c5f5b1d7ec9b9"
+    },
+    "violet": {
+      "hero_id": 86,
+      "display_name": "Violet",
+      "file": "violet.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/artist_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "710d397b8e4cccfc86398903e0039d9eb21e36d3c2349b590399bb7609747361"
+    },
+    "viscous": {
+      "hero_id": 35,
+      "display_name": "Viscous",
+      "file": "viscous.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/viscous_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "7a1c1d86a8894de9264af64f7033954435e37c65bf7ebbdb471e73fffa6e9bb4"
+    },
+    "vyper": {
+      "hero_id": 58,
+      "display_name": "Vyper",
+      "file": "vyper.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/kali_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "742584e1ca98d5cf26fed5d42336280e26515c7a339beddfb938989a59ef1de0"
+    },
+    "warden": {
+      "hero_id": 25,
+      "display_name": "Warden",
+      "file": "warden.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/warden_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "27583e2cc9a83edbe92555e9cec8eeefcda0d1837a96d7ad6dc4d759f00f6fde"
+    },
+    "wraith": {
+      "hero_id": 7,
+      "display_name": "Wraith",
+      "file": "wraith.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/wraith_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "841eb285a250347b3c5f9cf3d173bf2edbf1caa60b3e5e7ac7b423ec6638e6ec"
+    },
+    "yamato": {
+      "hero_id": 27,
+      "display_name": "Yamato",
+      "file": "yamato.png",
+      "image_field": "icon_hero_card",
+      "source_url": "https://assets-bucket.deadlock-api.com/assets-api-res/images/heroes/yamato_card.png",
+      "width": 280,
+      "height": 380,
+      "sha256": "83bfab2723d9c6e90284cde1986e15439ce97d1bd501671b191978b83638487f"
+    }
+  },
+  "errors": {}
+}
