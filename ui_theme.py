@@ -152,7 +152,7 @@ def build_interface(w, modes):
     outer = QVBoxLayout(w); outer.setContentsMargins(20, 12, 20, 12); outer.setSpacing(8)
     head = QHBoxLayout(); head.addWidget(Emblem())
     titles = QVBoxLayout(); titles.setSpacing(0)
-    titles.addWidget(label('DEADLOCK', 'title')); titles.addWidget(label('C O M P A N I O N', 'eyebrow'))
+    titles.addWidget(label('DEADLOCK', 'title')); titles.addWidget(label('F O R E S I G H T', 'eyebrow'))
     head.addLayout(titles); head.addStretch()
     head.addWidget(label('DESIGN PREVIEW' if w.preview else 'PREGAME ASSISTANT', 'eyebrow'))
     outer.addLayout(head)

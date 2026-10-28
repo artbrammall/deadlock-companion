@@ -28,7 +28,7 @@ class CompanionWindow(QWidget):
         super().__init__()
         self.preview = preview
         self.preview_storage = tempfile.TemporaryDirectory(prefix="deadlock-preview-") if preview else None
-        self.setWindowTitle("Deadlock Companion")
+        self.setWindowTitle("Deadlock Foresight")
         self.resize(600, 680)
 
         self.payload = None
