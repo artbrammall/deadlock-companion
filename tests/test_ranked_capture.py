@@ -42,10 +42,10 @@ class RankedCaptureTests(unittest.TestCase):
         self.assertEqual(teams["enemy"], ["victor", "calico", "yamato", "rem", "haze", "lash"])
         self.assertEqual(set(teams["enemy"]), set(ENEMIES))
 
-    def test_obscured_first_frame_fails_closed(self):
+    def test_obscured_first_frame_recognizes_visible_haze(self):
         teams = self.labels("competitive_pregame.png")
         self.assertEqual(teams["ally"], ALLIES)
-        self.assertEqual(teams["enemy"], ["UNKNOWN"] + ENEMIES[1:])
+        self.assertEqual(teams["enemy"], ENEMIES)
 
     def test_ranked_state_and_self(self):
         for name in ("competitive_pregame.png", "competitive_pregame_tab.png",

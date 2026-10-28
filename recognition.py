@@ -24,6 +24,14 @@ def detail_features(image):
     return grey - cv2.GaussianBlur(grey, (0, 0), 1.5)
 
 
+def local_contrast_features(image):
+    """Keep faint portrait detail without letting a bright scene edge dominate."""
+    grey = cv2.cvtColor(cv2.resize(image, (74, 88)), cv2.COLOR_BGR2GRAY).astype(np.float32)
+    detail = grey - cv2.GaussianBlur(grey, (0, 0), 1.0)
+    energy = cv2.GaussianBlur(detail * detail, (0, 0), 3.0)
+    return detail / np.sqrt(energy + 1.0)
+
+
 def rank_hero_matches(matches):
     """Compare distinct heroes, not two reference versions of the same hero."""
     best = {}
@@ -42,6 +50,7 @@ class HeroRecognizer:
         self.references = {}
         self.detail_references = {}
         self.full_detail_references = {}
+        self.contrast_references = {}
 
         folder = Path(portraits_folder)
         paths = [(path.stem, path) for path in sorted(folder.glob("*.png"))]
@@ -58,6 +67,7 @@ class HeroRecognizer:
                 raise RuntimeError(f"Cannot read reference: {path}")
 
             self.references[template_id] = prepare(image)
+            self.contrast_references[template_id] = local_contrast_features(image)
             self.full_detail_references[template_id] = detail_features(image)
             self.detail_references[template_id] = self.full_detail_references[template_id][20:60, 20:54]
 
@@ -170,6 +180,46 @@ class HeroRecognizer:
             "method": "two_region_agreement",
         }
 
+    def recognize_local_contrast(self, image, first_enemy=False):
+        """Match distributed detail after locally normalizing scene contrast.
+
+        This score has its own scale, separate from ordinary portrait NCC.
+        Require a distinct-hero margin and evidence in both visible sections
+        at one common offset. Never infer a hero from teammates or old frames.
+        """
+        features = local_contrast_features(image)
+        yy, xx = np.mgrid[10:78, 12:62]
+        visible = np.ones((68, 50), dtype=np.uint8)
+        if first_enemy:
+            visible[(xx < 49) & (yy >= 31)] = 0
+        sections = [visible * (yy < 34), visible * (yy >= 34)]
+        matches = []
+        for template_id, reference in self.contrast_references.items():
+            scores = cv2.matchTemplate(
+                features[8:80, 10:64], reference[10:78, 12:62],
+                cv2.TM_CCORR_NORMED, mask=visible,
+            )
+            scores = np.where(np.isfinite(scores), scores, -1.0)
+            offset = np.unravel_index(scores.argmax(), scores.shape)
+            evidence = []
+            for section in sections:
+                values = cv2.matchTemplate(
+                    features[8:80, 10:64], reference[10:78, 12:62],
+                    cv2.TM_CCORR_NORMED, mask=section.astype(np.uint8),
+                )
+                value = float(values[offset])
+                evidence.append(value if np.isfinite(value) else -1.0)
+            matches.append((float(scores[offset]), template_id, min(evidence)))
+        matches = rank_hero_matches(matches)
+        score, hero, support = matches[0]
+        margin = score - matches[1][0]
+        accepted = score >= 0.42 and margin >= 0.25 and support >= 0.30
+        return {
+            "hero": hero if accepted else "UNKNOWN",
+            "best_match": hero, "score": score, "margin": margin,
+            "support": support, "method": "local_contrast_agreement",
+        }
+
     def recognize_teams(self, screenshot, layout):
         height, width = screenshot.shape[:2]
 
@@ -198,6 +248,10 @@ class HeroRecognizer:
                         regional = self.recognize_regions(crop, first_enemy=(slot == 0))
                         if regional["hero"] != "UNKNOWN":
                             result = regional
+                if team == "enemy" and result["hero"] == "UNKNOWN":
+                    contrast = self.recognize_local_contrast(crop, first_enemy=(slot == 0))
+                    if contrast["hero"] != "UNKNOWN":
+                        result = contrast
                 teams[team].append(result)
 
         return teams
