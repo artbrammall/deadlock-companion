@@ -24,6 +24,17 @@ def detail_features(image):
     return grey - cv2.GaussianBlur(grey, (0, 0), 1.5)
 
 
+def rank_hero_matches(matches):
+    """Compare distinct heroes, not two reference versions of the same hero."""
+    best = {}
+    for score, template_id, *extra in matches:
+        hero = template_id.split("__", 1)[0]
+        entry = (score, hero, *extra)
+        if hero not in best or score > best[hero][0]:
+            best[hero] = entry
+    return sorted(best.values(), reverse=True)
+
+
 class HeroRecognizer:
     def __init__(self, portraits_folder, min_score=0.75, min_margin=0.08):
         self.min_score = min_score
@@ -32,16 +43,25 @@ class HeroRecognizer:
         self.detail_references = {}
         self.full_detail_references = {}
 
-        for path in sorted(Path(portraits_folder).glob("*.png")):
+        folder = Path(portraits_folder)
+        paths = [(path.stem, path) for path in sorted(folder.glob("*.png"))]
+        # Keep variants nested so roster tools do not mistake them for heroes.
+        for path in sorted((folder / "variants").glob("*/*.png")):
+            hero = path.parent.name
+            if not (folder / f"{hero}.png").is_file():
+                raise ValueError(f"Variant has no base hero portrait: {path}")
+            paths.append((f"{hero}__{path.stem}", path))
+
+        for template_id, path in paths:
             image = cv2.imread(str(path))
             if image is None:
                 raise RuntimeError(f"Cannot read reference: {path}")
 
-            self.references[path.stem] = prepare(image)
-            self.full_detail_references[path.stem] = detail_features(image)
-            self.detail_references[path.stem] = self.full_detail_references[path.stem][20:60, 20:54]
+            self.references[template_id] = prepare(image)
+            self.full_detail_references[template_id] = detail_features(image)
+            self.detail_references[template_id] = self.full_detail_references[template_id][20:60, 20:54]
 
-        if len(self.references) < 2:
+        if len({key.split("__", 1)[0] for key in self.references}) < 2:
             raise RuntimeError("At least two reference portraits are required.")
 
     def recognize(self, image):
@@ -58,7 +78,7 @@ class HeroRecognizer:
 
             matches.append((score, hero))
 
-        matches.sort(reverse=True)
+        matches = rank_hero_matches(matches)
         score, best_hero = matches[0]
         margin = score - matches[1][0]
 
@@ -94,7 +114,7 @@ class HeroRecognizer:
             score = float(finite.max()) if finite.size else -1.0
             matches.append((score, hero))
 
-        matches.sort(reverse=True)
+        matches = rank_hero_matches(matches)
         score, hero = matches[0]
         margin = score - matches[1][0]
         accepted = score >= self.min_score and margin >= max(self.min_margin, 0.12)
@@ -140,7 +160,7 @@ class HeroRecognizer:
             best = np.unravel_index(combined.argmax(), combined.shape)
             score = float(combined[best])
             matches.append((score, hero, bool(supported[best])))
-        matches.sort(reverse=True)
+        matches = rank_hero_matches(matches)
         score, hero, supported = matches[0]
         margin = score - matches[1][0]
         accepted = supported and score >= max(self.min_score, 0.85) and margin >= max(self.min_margin, 0.20)
