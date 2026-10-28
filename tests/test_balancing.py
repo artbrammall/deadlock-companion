@@ -11,7 +11,7 @@ class BalancingTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
-        self.path = Path(self.temp.name) / 'companion.db'
+        self.path = Path(self.temp.name) / 'foresight.db'
         self.history = BalanceHistory(self.path)
         self.rows = [
             {'hero': 'a', 'score': 55, 'opportunity_percentile': 90, 'above_typical_points': .5},

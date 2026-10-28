@@ -1,3 +1,7 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from app_paths import DATA_DIR
 import hashlib
 import json
 import random
@@ -18,8 +22,8 @@ SEED = 29173
 
 
 def main():
-    stats_path = ROOT / "data" / "hero_stats.json"
-    source_path = ROOT / "data" / "real_lineups.json"
+    stats_path = DATA_DIR / "hero_stats.json"
+    source_path = DATA_DIR / "real_lineups.json"
 
     stats_bytes = stats_path.read_bytes()
     source_bytes = source_path.read_bytes()
@@ -139,7 +143,7 @@ def main():
         ),
     }
 
-    output = ROOT / "data" / "real_opportunity_experiment.json"
+    output = DATA_DIR / "real_opportunity_experiment.json"
     temporary = output.with_suffix(".tmp")
     temporary.write_text(
         json.dumps(experiment, indent=2),

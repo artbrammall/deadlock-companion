@@ -5,12 +5,14 @@ import time
 import uuid
 from pathlib import Path
 
-DATABASE = Path(__file__).resolve().parent / 'data' / 'companion.db'
+from app_paths import DATABASE, ensure_data
 SESSION_GAP = 120
 
 
 class BalanceHistory:
     def __init__(self, path=DATABASE):
+        if Path(path) == DATABASE:
+            ensure_data()
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as db:

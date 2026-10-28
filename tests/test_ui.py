@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 from PySide6.QtCore import QProcess
 from PySide6.QtWidgets import QApplication, QMessageBox
-from app import CompanionWindow
+from app import ForesightWindow
 from roster_dialog import RosterDialog
 from ui_preview import example_lineup
 from ui_theme import Portrait
@@ -18,7 +18,7 @@ class InterfaceTests(unittest.TestCase):
         cls.qt = QApplication.instance() or QApplication([])
 
     def setUp(self):
-        self.w = CompanionWindow(preview=True)
+        self.w = ForesightWindow(preview=True)
         self.w.show(); self.qt.processEvents()
 
     def tearDown(self):

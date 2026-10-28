@@ -1,3 +1,7 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from app_paths import DATA_DIR
 import json
 from pathlib import Path
 
@@ -8,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main():
     stats = json.loads(
-        (ROOT / "data" / "hero_stats.json").read_text(encoding="utf-8")
+        (DATA_DIR / "hero_stats.json").read_text(encoding="utf-8")
     )
 
     # Use the same mode and time window as our statistics.
@@ -35,7 +39,7 @@ def main():
     if not isinstance(matches, list) or not matches:
         raise ValueError("Expected a non-empty list of matches.")
 
-    output = ROOT / "data" / "real_matches_sample.json"
+    output = DATA_DIR / "real_matches_sample.json"
     output.write_text(
         json.dumps(
             {"query": params, "matches": matches},

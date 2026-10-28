@@ -3,6 +3,10 @@
 Run from the project root: python tools/evaluate_competitive.py
 Dependencies: numpy, scikit-learn (no game or personal account required).
 """
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from app_paths import DATA_DIR
 import argparse
 import hashlib
 import json
@@ -50,7 +54,7 @@ class PublicAPI:
             time.sleep(max(0, 2.2 - (time.monotonic() - self.last_request)))
             self.last_request = time.monotonic()
             request = urllib.request.Request(url, headers={
-                "User-Agent": "DeadlockCompanion-offline-evaluation/1",
+                "User-Agent": "DeadlockForesight-offline-evaluation/1",
                 "Accept": "application/json",
             })
             try:
@@ -207,7 +211,7 @@ def bootstrap_gain(y, baseline, candidate, windows):
 
 
 def run(root):
-    source_path = root / "data" / "real_lineups.json"
+    source_path = DATA_DIR / "real_lineups.json"
     source_bytes = source_path.read_bytes()
     source = json.loads(source_bytes)
     for match in source["lineups"]:
@@ -246,7 +250,7 @@ def run(root):
     test_start = windows[third][0]
     print(f"Windows: statistics {first}, fit {second-first}, tune {third-second}, test {count-third}")
     print("Fetching historical aggregate statistics (separate from live caches)...", flush=True)
-    output = root / "data" / "competitive_evaluation"
+    output = DATA_DIR / "competitive_evaluation"
     api = PublicAPI(output / "requests")
     params = {**source["filters"], "max_unix_timestamp": fit_start - 1}
     overall = api.get("/v1/analytics/hero-stats", {**params, "bucket": "no_bucket"})

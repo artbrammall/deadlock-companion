@@ -183,7 +183,7 @@ def build_interface(w, modes):
     w.notice = label('', 'muted', True); outer.addWidget(w.notice)
     w.log = QPlainTextEdit(); w.log.setReadOnly(True); w.log.setMaximumBlockCount(150); w.log.setFixedHeight(100)
     w.activity = Disclosure('Activity log', w.log, False); outer.addWidget(w.activity)
-    footer = 'Preview uses example data. Your saved roster and counts are untouched.' if w.preview else 'Hero artwork © Valve · Independent companion app'
+    footer = 'Preview uses example data. Your saved roster and counts are untouched.' if w.preview else 'Hero artwork © Valve · Independent fan app'
     outer.addWidget(label(footer, 'muted', True))
     clear_cards(w, 'Waiting for a confirmed pregame lineup')
 

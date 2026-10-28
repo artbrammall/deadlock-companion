@@ -1,3 +1,7 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from app_paths import DATA_DIR
 import argparse
 import csv
 import random
@@ -153,7 +157,7 @@ def main():
                 ),
             })
 
-    output = ROOT / "data" / "simulations"
+    output = DATA_DIR / "simulations"
     output.mkdir(parents=True, exist_ok=True)
 
     summary_path = output / "recommendation_summary.csv"

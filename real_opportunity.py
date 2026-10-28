@@ -1,3 +1,4 @@
+from app_paths import DATA_DIR
 import hashlib
 import json
 from bisect import bisect_left, bisect_right
@@ -11,8 +12,8 @@ from scoring import PRIOR_MATCHES, MATCHUP_WEIGHT, SYNERGY_WEIGHT
 from tools.download_real_lineups import main as download_lineups
 
 ROOT = Path(__file__).resolve().parent
-LINEUPS = ROOT / "data" / "real_lineups.json"
-CACHE = ROOT / "data" / "real_opportunity_cache.json"
+LINEUPS = DATA_DIR / "real_lineups.json"
+CACHE = DATA_DIR / "real_opportunity_cache.json"
 
 LINEUP_MAX_AGE_SECONDS = 24 * 60 * 60
 REFERENCE_VERSION = 1
@@ -65,7 +66,7 @@ class RealOpportunityScorer:
         if source is None or not source.get("lineups"):
             raise ValueError("No usable recorded lineups.")
 
-        stats_bytes = (ROOT / "data" / "hero_stats.json").read_bytes()
+        stats_bytes = (DATA_DIR / "hero_stats.json").read_bytes()
         stats = json.loads(stats_bytes)
 
         if stats["downloaded_at"] != scorer.downloaded_at:
@@ -129,7 +130,7 @@ class RealOpportunityScorer:
             references = self.build(scorer, source["lineups"])
 
             # Avoid saving references if another process replaced the stats.
-            current_bytes = (ROOT / "data" / "hero_stats.json").read_bytes()
+            current_bytes = (DATA_DIR / "hero_stats.json").read_bytes()
             if hashlib.sha256(current_bytes).hexdigest() != identity["stats_sha256"]:
                 raise ValueError("Statistics changed during the build.")
 

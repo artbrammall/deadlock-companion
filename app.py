@@ -10,25 +10,28 @@ from ui_preview import example_lineup
 from roster_dialog import RosterDialog
 from datetime import datetime, timezone
 from pathlib import Path
-from PySide6.QtCore import QProcess, QTimer, Qt
+from app_paths import ASSET_DIR, DATA_DIR, ensure_data, worker_command
+from PySide6.QtGui import QIcon, QFont
+from PySide6.QtCore import QProcess, QTimer, Qt, QLockFile
 from PySide6.QtWidgets import QApplication, QWidget, QDialog, QMessageBox
 
 from pick_modes import MODES, choose_heroes, choose_balanced, balance_adjustments
 from balance_history import BalanceHistory
 
-ROOT = Path(__file__).resolve().parent
+ROOT = ASSET_DIR
 
 
 def display_name(name):
     return name.replace("_", " ").title()
 
 
-class CompanionWindow(QWidget):
+class ForesightWindow(QWidget):
     def __init__(self, preview=False):
         super().__init__()
         self.preview = preview
         self.preview_storage = tempfile.TemporaryDirectory(prefix="deadlock-preview-") if preview else None
         self.setWindowTitle("Deadlock Foresight")
+        self.setWindowIcon(QIcon(str(ASSET_DIR / "assets" / "foresight.ico")))
         self.resize(600, 680)
 
         self.payload = None
@@ -57,10 +60,8 @@ class CompanionWindow(QWidget):
         self.process.finished.connect(self.process_finished)
         self.process.errorOccurred.connect(self.process_error)
         if not preview:
-            self.process.start(
-                sys.executable,
-                ["-u", str(ROOT / "live_detection.py"), "--gui"],
-            )
+            executable, arguments = worker_command()
+            self.process.start(executable, arguments)
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.check_worker)
@@ -374,8 +375,51 @@ class CompanionWindow(QWidget):
             self.process.kill()
 
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = CompanionWindow(preview="--preview" in sys.argv)
-    window.show()
-    sys.exit(app.exec())
+def main():
+    import logging
+    from logging.handlers import RotatingFileHandler
+    import os
+    import traceback
+    application = QApplication(sys.argv)
+    application.setApplicationName("Deadlock Foresight")
+    application.setFont(QFont("Segoe UI", 10))
+    preview = "--preview" in sys.argv
+    lock = None
+    try:
+        if not preview:
+            DATA_DIR.mkdir(parents=True, exist_ok=True)
+            lock = QLockFile(str(DATA_DIR / 'application.lock'))
+            if not lock.tryLock(0):
+                QMessageBox.information(None, 'Deadlock Foresight',
+                                        'Deadlock Foresight is already running, or its data folder is locked.')
+                return 0
+            ensure_data()
+            logger = logging.getLogger('foresight')
+            logger.setLevel(logging.INFO)
+            handler = RotatingFileHandler(DATA_DIR / 'app.log', maxBytes=2_000_000,
+                                          backupCount=2, encoding='utf-8')
+            logger.addHandler(handler)
+            def report_error(kind, value, tb):
+                logger.error('Unhandled exception', exc_info=(kind, value, tb))
+                QMessageBox.critical(None, 'Deadlock Foresight',
+                                     f'{value}\n\nDetails saved to {DATA_DIR / "app.log"}')
+            sys.excepthook = report_error
+        # Windowed PyInstaller builds do not provide console streams.
+        for stream in ('stdout', 'stderr'):
+            if getattr(sys, stream) is None:
+                setattr(sys, stream, open(os.devnull, 'w', encoding='utf-8'))
+        window = ForesightWindow(preview=preview)
+        window.show()
+        return application.exec()
+    except Exception as error:
+        QMessageBox.critical(None, 'Deadlock Foresight could not start', str(error))
+        return 1
+    finally:
+        if lock is not None:
+            lock.unlock()
+
+
+if __name__ == '__main__':
+    import multiprocessing
+    multiprocessing.freeze_support()
+    raise SystemExit(main())

@@ -1,3 +1,4 @@
+from app_paths import DATA_DIR
 import json
 from pathlib import Path
 
@@ -22,7 +23,7 @@ class PickScorer:
             (ROOT / "hero_ids.json").read_text(encoding="utf-8")
         )
         cache = json.loads(
-            (ROOT / "data" / "hero_stats.json").read_text(encoding="utf-8")
+            (DATA_DIR / "hero_stats.json").read_text(encoding="utf-8")
         )
         datasets = cache["datasets"]
         self.downloaded_at = cache["downloaded_at"]

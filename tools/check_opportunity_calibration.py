@@ -1,3 +1,7 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from app_paths import DATA_DIR
 import hashlib
 import json
 from bisect import bisect_left, bisect_right
@@ -23,11 +27,11 @@ def percentile(values, effect):
 
 def main():
     experiment = json.loads(
-        (ROOT / "data" / "real_opportunity_experiment.json").read_text(
+        (DATA_DIR / "real_opportunity_experiment.json").read_text(
             encoding="utf-8"
         )
     )
-    stats_bytes = (ROOT / "data" / "hero_stats.json").read_bytes()
+    stats_bytes = (DATA_DIR / "hero_stats.json").read_bytes()
 
     if hashlib.sha256(stats_bytes).hexdigest() != experiment["stats_sha256"]:
         raise ValueError("Statistics changed. Use the experiment's snapshot.")
@@ -115,7 +119,7 @@ def main():
             f"{below50:10.1f} {above90:13.1f}"
         )
 
-    output = ROOT / "data" / "opportunity_calibration.json"
+    output = DATA_DIR / "opportunity_calibration.json"
     output.write_text(
         json.dumps({
             "stats_sha256": experiment["stats_sha256"],

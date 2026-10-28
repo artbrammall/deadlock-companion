@@ -45,8 +45,9 @@ if GUI_MODE:
 
 
 ROOT = Path(__file__).resolve().parent
-DEBUG = ROOT / "debug_live"
-DEBUG.mkdir(exist_ok=True)
+from app_paths import DATA_DIR
+DEBUG = DATA_DIR / "debug_live"
+DEBUG.mkdir(parents=True, exist_ok=True)
 
 DEVICE = 0
 MONITOR = 0

@@ -1,9 +1,10 @@
+from app_paths import DATA_DIR
 import argparse
 import sqlite3
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-DATABASE = ROOT / "data" / "companion.db"
+from app_paths import DATABASE, ensure_data
 
 
 def available_heroes():
@@ -14,6 +15,7 @@ def available_heroes():
 
 
 def connect():
+    ensure_data()
     DATABASE.parent.mkdir(exist_ok=True)
     connection = sqlite3.connect(DATABASE)
     connection.execute("""

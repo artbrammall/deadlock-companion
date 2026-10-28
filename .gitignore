@@ -8,3 +8,5 @@ debug_live/
 data/
 .pytest_cache/
 *.py[cod]
+.venv-old/
+*.lnk

@@ -1,3 +1,7 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from app_paths import DATA_DIR
 import json
 import random
 import time
@@ -8,7 +12,7 @@ from pathlib import Path
 import httpx
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "data" / "real_lineups.json"
+OUTPUT = DATA_DIR / "real_lineups.json"
 
 SEED = 84217
 BLOCK_SECONDS = 6 * 60 * 60
@@ -19,7 +23,7 @@ REQUEST_INTERVAL = 2.2
 
 def main():
     stats = json.loads(
-        (ROOT / "data" / "hero_stats.json").read_text(encoding="utf-8")
+        (DATA_DIR / "hero_stats.json").read_text(encoding="utf-8")
     )
     mapping = json.loads(
         (ROOT / "hero_ids.json").read_text(encoding="utf-8")

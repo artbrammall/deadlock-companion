@@ -1,3 +1,7 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from app_paths import DATA_DIR
 import json
 import time
 from datetime import datetime, timezone
@@ -6,7 +10,7 @@ from pathlib import Path
 import httpx
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "data" / "hero_stats.json"
+OUTPUT = DATA_DIR / "hero_stats.json"
 
 requests = {
     "overall": (

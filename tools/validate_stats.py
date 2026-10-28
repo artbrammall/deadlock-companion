@@ -1,3 +1,7 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from app_paths import DATA_DIR
 import json
 from pathlib import Path
 
@@ -28,7 +32,7 @@ def main():
         (ROOT / "hero_ids.json").read_text(encoding="utf-8")
     )
     cache = json.loads(
-        (ROOT / "data" / "hero_stats.json").read_text(encoding="utf-8")
+        (DATA_DIR / "hero_stats.json").read_text(encoding="utf-8")
     )
     datasets = cache["datasets"]
 
