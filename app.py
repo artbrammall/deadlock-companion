@@ -2,23 +2,16 @@ import json
 import sys
 import time
 import sqlite3
+import tempfile
+
+from ui_theme import build_interface, clear_cards, show_cards
+from ui_preview import example_lineup
 
 from roster_dialog import RosterDialog
 from datetime import datetime, timezone
 from pathlib import Path
 from PySide6.QtCore import QProcess, QTimer, Qt
-from PySide6.QtWidgets import (
-    QApplication,
-    QComboBox,
-    QCheckBox,
-    QLabel,
-    QPlainTextEdit,
-    QPushButton,
-    QVBoxLayout,
-    QWidget,
-    QDialog,
-    QMessageBox,
-)
+from PySide6.QtWidgets import QApplication, QWidget, QDialog, QMessageBox
 
 from pick_modes import MODES, choose_heroes, choose_balanced, balance_adjustments
 from balance_history import BalanceHistory
@@ -31,13 +24,15 @@ def display_name(name):
 
 
 class CompanionWindow(QWidget):
-    def __init__(self):
+    def __init__(self, preview=False):
         super().__init__()
+        self.preview = preview
+        self.preview_storage = tempfile.TemporaryDirectory(prefix="deadlock-preview-") if preview else None
         self.setWindowTitle("Deadlock Companion")
         self.resize(600, 680)
 
         self.payload = None
-        self.history = BalanceHistory()
+        self.history = BalanceHistory(Path(self.preview_storage.name) / "preview.db") if preview else BalanceHistory()
         self.balance_session = None
         self.prior_counts = {}
         self.last_history_touch = 0.0
@@ -48,65 +43,7 @@ class CompanionWindow(QWidget):
         self.roster_update_pending = False
         self.last_heartbeat = time.monotonic()
 
-        self.status = QLabel("Starting detection and loading statistics...")
-        self.status.setWordWrap(True)
-        self.status.setTextFormat(Qt.TextFormat.PlainText)
-
-        self.mode = QComboBox()
-        self.mode.addItems(MODES)
-        self.mode.setCurrentText("Best Opportunity")
-
-        self.suggestion = QLabel("Waiting for a confirmed pregame lineup")
-        self.suggestion.setWordWrap(True)
-        self.suggestion.setStyleSheet("font-size: 24px; font-weight: bold;")
-
-        self.details = QPlainTextEdit()
-        self.details.setReadOnly(True)
-
-        self.reroll = QPushButton("Reroll")
-        self.reroll.setEnabled(False)
-
-        notice = QLabel(
-            "Scores are estimates, not win probabilities.\n"
-            "Enemy picks may have changed. Confirm availability in-game."
-        )
-        notice.setWordWrap(True)
-
-        self.log = QPlainTextEdit()
-        self.log.setReadOnly(True)
-        self.log.setMaximumBlockCount(150)
-        self.log.setMaximumHeight(140)
-
-        self.edit_roster_button = QPushButton("Edit roster")
-        self.edit_roster_button.clicked.connect(self.edit_roster)
-
-        self.balance = QCheckBox("Balance roster")
-        self.balance.setChecked(self.history.enabled())
-        self.balance.setToolTip(
-            "Favour heroes with fewer previous #1 recommendations. "
-            "Counts are recorded with the toggle on or off."
-        )
-        self.balance.toggled.connect(self.balance_changed)
-        self.reset_counts_button = QPushButton("Reset counts")
-        self.reset_counts_button.clicked.connect(self.reset_balance_counts)
-        self.history_label = QLabel("#1 counts start with this update.")
-        self.history_label.setWordWrap(True)
-
-        layout = QVBoxLayout(self)
-        for widget in (
-            self.status,
-            self.mode,
-            self.edit_roster_button,
-            self.balance,
-            self.reset_counts_button,
-            self.history_label,
-            self.suggestion,
-            self.details,
-            self.reroll,
-            notice,
-            self.log,
-        ):
-            layout.addWidget(widget)
+        build_interface(self, MODES)
 
         self.mode.currentTextChanged.connect(self.mode_changed)
         self.reroll.clicked.connect(self.reroll_pick)
@@ -119,20 +56,26 @@ class CompanionWindow(QWidget):
         self.process.readyReadStandardOutput.connect(self.read_output)
         self.process.finished.connect(self.process_finished)
         self.process.errorOccurred.connect(self.process_error)
-        self.process.start(
-            sys.executable,
-            ["-u", str(ROOT / "live_detection.py"), "--gui"],
-        )
+        if not preview:
+            self.process.start(
+                sys.executable,
+                ["-u", str(ROOT / "live_detection.py"), "--gui"],
+            )
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.check_worker)
-        self.timer.start(1000)
+        if not preview:
+            self.timer.start(1000)
+        else:
+            self.log.appendPlainText("Preview mode: example data, no capture or network requests.")
+            self.history.set_enabled(True)
+            self.balance.setChecked(True)
+            self.handle_event(example_lineup())
 
     def hide_recommendation(self, message):
         self.payload = None
         self.status.setText(message)
-        self.suggestion.setText("No active recommendation")
-        self.details.clear()
+        clear_cards(self, "No active recommendation")
         self.reroll.setEnabled(False)
 
     def read_output(self):
@@ -287,7 +230,7 @@ class CompanionWindow(QWidget):
 
     def edit_roster(self):
         try:
-            dialog = RosterDialog(self)
+            dialog = RosterDialog(self, preview=self.preview)
         except (sqlite3.Error, OSError, ValueError) as error:
             QMessageBox.warning(
                 self, "Could not load roster", str(error)
@@ -354,18 +297,12 @@ class CompanionWindow(QWidget):
             else "Confirmed pregame"
         )
 
+        if self.preview:
+            state_label = "PREVIEW · Example pregame"
         self.status.setText(
             f"{state_label} | {mode}\n"
             f"Statistics: {age_hours:.1f} hours old"
         )
-
-        headings = []
-        details = [
-            f"You: {display_name(data['current_hero'])} "
-            f"(ally slot {data['self_slot'] + 1})",
-            f"Current hero score: {current['score']:.2f} points",
-            "",
-        ]
 
         selected = self.selected_heroes or []
         bonuses = (
@@ -385,117 +322,7 @@ class CompanionWindow(QWidget):
             except sqlite3.Error as error:
                 self.history_label.setText(f"Could not save #1 count: {error}")
 
-        for position, hero in enumerate(selected, start=1):
-            result = by_hero[hero]
-            is_current = hero == data["current_hero"]
-            label = (
-                f"Stay on {display_name(hero)}"
-                if is_current
-                else display_name(hero)
-            )
-
-            difference = result["score"] - current["score"]
-            # Avoid displaying "-0.00".
-            if abs(difference) < 0.005:
-                difference = 0.0
-
-            heading = f"{position}. {label}"
-            if mode == "Competitive" and not is_current:
-                heading += f" ({difference:+.2f} points vs staying)"
-
-            headings.append(heading)
-            details.extend([
-                f"{position}. {label}",
-                f"   Total score: {result['score']:.2f} points",
-            ])
-
-            if mode == "Competitive":
-                details.append(
-                    "   Current hero: comparison baseline"
-                    if is_current
-                    else f"   Score difference vs staying: "
-                         f"{difference:+.2f} points"
-                )
-
-            details.extend([
-                f"   Overall baseline: {result['baseline_pct']:.2f}",
-                f"   Enemy adjustment: {result['matchup_points']:+.2f}",
-                f"   Ally adjustment: {result['synergy_points']:+.2f}",
-            ])
-
-            details.append(
-                f"   Previous #1 recommendations: {self.prior_counts.get(hero, 0)}"
-            )
-            if hero in bonuses:
-                unit = "score points" if mode == "Competitive" else "percentile points"
-                details.append(
-                    f"   Balance boost: +{bonuses[hero]:.2f} {unit} (preference only)"
-                )
-
-            if "opportunity_percentile" in result:
-                reference_count = result["opportunity_reference_count"]
-                downloaded_at = datetime.fromisoformat(
-                    result["opportunity_reference_downloaded_at"]
-                )
-                reference_age = max(
-                    0,
-                    (
-                        datetime.now(timezone.utc) - downloaded_at
-                    ).total_seconds() / 3600,
-                )
-
-                details.extend([
-                    "   Opportunity percentile: "
-                    f"{result['opportunity_percentile']:.1f}",
-                    "   Above this hero's typical situation: "
-                    f"{result['above_typical_points']:+.3f} points",
-                    f"   Reference: {reference_count:,} actual matches",
-                    f"   Lineups downloaded {reference_age:.1f} hours ago",
-                ])
-
-                if reference_count < 500:
-                    details.append(
-                        "   Limited reference sample; percentile is less stable."
-                    )
-
-            if result["missing"]:
-                details.append(
-                    "   Missing pair data: " + ", ".join(result["missing"])
-                )
-
-            details.append("")
-
-        if mode == "Competitive":
-            details.extend([
-                ("Ranked by score plus balance boost."
-                 if self.balance.isChecked() else "Ranked by total score."),
-                "Differences compare model scores, not win probabilities.",
-                "A higher score does not guarantee a better pick.",
-            ])
-
-        elif mode == "Random":
-            details.append(
-                "Random options weighted toward less-recommended heroes."
-                if self.balance.isChecked()
-                else "Random options, not ranked by score."
-            )
-
-        elif mode == "Best Opportunity":
-            details.extend([
-                ("Ranked by opportunity percentile plus balance boost."
-                 if self.balance.isChecked()
-                 else "Ranked against situations where each hero actually played."),
-                "Percentiles are not win probabilities.",
-                "A favourable opportunity can still be a weaker",
-                "competitive pick than another hero.",
-            ])
-
-        self.suggestion.setText(
-            "\n".join(headings)
-            if headings
-            else "Best Opportunity unavailable: reference data incomplete"
-        )
-        self.details.setPlainText("\n".join(details))
+        show_cards(self, data, selected, bonuses)
         self.reroll.setEnabled(mode == "Random")
 
     def check_worker(self):
@@ -521,6 +348,9 @@ class CompanionWindow(QWidget):
 
     def closeEvent(self, event):
         if self.process.state() == QProcess.ProcessState.NotRunning:
+            self.timer.stop()
+            if self.preview_storage is not None:
+                self.preview_storage.cleanup()
             event.accept()
             return
 
@@ -546,6 +376,6 @@ class CompanionWindow(QWidget):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = CompanionWindow()
+    window = CompanionWindow(preview="--preview" in sys.argv)
     window.show()
     sys.exit(app.exec())

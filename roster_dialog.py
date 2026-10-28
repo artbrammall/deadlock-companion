@@ -1,4 +1,9 @@
 import sqlite3
+import json
+from pathlib import Path
+from PySide6.QtGui import QIcon
+from PySide6.QtCore import QSize
+from ui_theme import STYLE
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -17,12 +22,16 @@ from roster import available_heroes, get_roster, set_roster
 
 
 class RosterDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, preview=False):
         super().__init__(parent)
         self.setWindowTitle("Edit roster")
-        self.resize(380, 560)
+        self.resize(440, 640)
+        self.preview = preview
+        self.setStyleSheet(STYLE)
 
-        saved = set(get_roster())
+        root = Path(__file__).resolve().parent
+        heroes = sorted(json.loads((root / "hero_ids.json").read_text())) if preview else sorted(available_heroes())
+        saved = set(heroes) if preview else set(get_roster())
 
         explanation = QLabel(
             "Choose heroes you want recommended.\n"
@@ -32,8 +41,10 @@ class RosterDialog(QDialog):
         explanation.setWordWrap(True)
 
         self.heroes = QListWidget()
-        for hero in sorted(available_heroes()):
+        self.heroes.setIconSize(QSize(35, 47))
+        for hero in heroes:
             item = QListWidgetItem(hero.replace("_", " ").title())
+            item.setIcon(QIcon(str(root / "assets" / "hero_portraits" / f"{hero}.png")))
             item.setData(Qt.ItemDataRole.UserRole, hero)
             item.setFlags(
                 item.flags() | Qt.ItemFlag.ItemIsUserCheckable
@@ -65,6 +76,9 @@ class RosterDialog(QDialog):
             QDialogButtonBox.StandardButton.Save
             | QDialogButtonBox.StandardButton.Cancel
         )
+        if preview:
+            buttons.button(QDialogButtonBox.StandardButton.Save).setEnabled(False)
+            explanation.setText("Preview roster editor. Saving is disabled here; your real roster is untouched.")
         buttons.accepted.connect(self.save)
         buttons.rejected.connect(self.reject)
 
@@ -100,6 +114,8 @@ class RosterDialog(QDialog):
         self.update_count()
 
     def save(self):
+        if self.preview:
+            return
         try:
             set_roster(self.selected_heroes())
         except (sqlite3.Error, OSError, ValueError) as error:
